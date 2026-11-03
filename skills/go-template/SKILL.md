@@ -44,8 +44,8 @@ The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
 
 The agent MUST run `mise upgrade` after it writes the pins.
 `mise install` keeps an existing `latest` installation and does not refresh it, so a stale installation can run an older tool than the pin names.
-A tool installed outside `mise` can also shadow the pinned one inside a Git hook, because the Git installation can put its own prefix ahead of the `mise` tool paths.
-The agent MUST compare `mise which TOOL` with the command that the hook runs when a hook reports a version it should not.
+`hk` runs its steps in the environment that `mise` provides, so use the `mise` tasks such as `mise run fix` and `mise run check`.
+A bare `hk` command runs whatever tools the shell resolves, which is not necessarily the pinned ones.
 
 ## Required baseline
 

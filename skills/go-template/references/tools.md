@@ -28,7 +28,7 @@ Install the tool with `mise`; the step only supplies the command, the file patte
 
 | Step | Source | Tool | Notes |
 | --- | --- | --- | --- |
-| `mdlint` | hk-config | `mdlint` | Install `github:nnutter/mdlint`. Set `front_matter = "---"` in `mdlint.toml` when files carry YAML front matter. |
+| `mdlint` | hk-config | `mdlint` | Install `github:nnutter/mdlint`. |
 | `skills_ref` | hk-config | `agentskills` | Validates the front matter of each `SKILL.md`. Install `pypi:agentskills-tools`. |
 | `yamlfmt` | hk | `yamlfmt` | Formats YAML, including workflows. |
 | `tombi_format`, `tombi` | hk | `tombi` | Formats, then lints, TOML. |
