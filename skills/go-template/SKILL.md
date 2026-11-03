@@ -75,8 +75,9 @@ The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only 
   Pin each action to a full commit SHA and keep its release tag in a comment.
   The tag MUST be the latest release of that action that is at least 24 hours old.
   The agent MUST confirm the tag, its date, and its SHA in the action's GitHub repository, and MUST NOT pin a release published within 24 hours.
-- Configure the release workflow from `references/.github/workflows/release.yaml` when the repository publishes a program.
+- Configure the release workflow from `references/.github/workflows/release.yaml` when the repository is a Go application.
   A `v*` tag MUST build macOS and Linux binaries for arm64 and amd64 and attach them to the GitHub release.
+  A Go library MUST NOT add the release workflow.
 
 A custom step MUST carry a comment that states why no built-in fits.
 If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.

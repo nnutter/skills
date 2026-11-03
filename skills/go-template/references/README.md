@@ -15,7 +15,7 @@ Every other tool takes the latest release, and `mise.lock` is tracked so that a 
 `.gitignore` keeps `/.mise/`, where some backends write build scaffolding, and the coverage output.
 `references/tools.md` lists the recommended tool for each language and format.
 
-Copy `.github/workflows/release.yaml` when the repository publishes a program.
+Copy `.github/workflows/release.yaml` when the repository is a Go application; a library does not publish binaries and does not need it.
 Replace `BINARY_PLACEHOLDER` with the binary name and `MAIN_PACKAGE_PLACEHOLDER` with the package to build, such as `.` or `./cmd/name`.
 The workflow builds macOS and Linux binaries for arm64 and amd64 on a `v*` tag and publishes them with checksums.
 
