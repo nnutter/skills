@@ -52,6 +52,9 @@ A bare `hk` command runs whatever tools the shell resolves, which is not necessa
 The agent MUST configure `mise` to install the required tools and `hk` to run formatters and linters.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
 `hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
+`hk` installs config-based Git hooks on Git 2.54 or later and writes script shims on an older Git.
+Both work, but the Git version then picks the mechanism on each machine.
+When a repository needs the same mechanism everywhere, the agent SHOULD install Git through `mise` with `conda:git`, a prebuilt package of about 260 MB that every repository on the machine shares.
 The `commit-msg` hook MUST run `timber review commit-msg` through the `timber_commit_msg` built-in in `references/hk.pkl`.
 That hook supersedes the `git-review commit-msg` hook, and every `github.com/nnutter` repository uses it.
 Use `references/mise.toml` and `references/hk.pkl` as the configuration references.

@@ -12,6 +12,10 @@ gitleaks = "latest"
 pkl = "latest"
 tombi = "latest"
 yamlfmt = "latest"
+# Git 2.54 and later lets hk install config-based hooks instead of script
+# shims, so the hook mechanism does not depend on the host Git. The package is
+# about 260 MB and every repository on the machine shares it.
+"conda:git" = "latest"
 "github:nnutter/mdlint" = "latest"
 "go:github.com/alecthomas/go-check-sumtype/cmd/go-check-sumtype" = "latest"
 "go:github.com/kisielk/errcheck" = "latest"
