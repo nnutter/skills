@@ -41,6 +41,20 @@ class SkillReferenceTest(unittest.TestCase):
 		self.assertIn('["change-id"] = Extra.timber_commit_msg', config)
 		self.assertNotIn("git-review", config)
 
+	def test_workflows_pin_actions_to_a_commit(self) -> None:
+		workflows = sorted((REFERENCES / ".github" / "workflows").glob("*.y*ml"))
+		self.assertTrue(workflows, "The reference must ship workflows")
+		for path in workflows:
+			for line in path.read_text().splitlines():
+				if "uses:" not in line:
+					continue
+				uses = line.split("uses:", 1)[1].strip()
+				with self.subTest(workflow=path.name, uses=uses):
+					action, _, ref = uses.partition("@")
+					self.assertRegex(action, r"^[\w.-]+/[\w.-]+$")
+					self.assertRegex(ref.split()[0], r"^[0-9a-f]{40}$", "Pin the action to a commit")
+					self.assertRegex(line, r"#\s*v?[0-9]", "Keep the release tag in a comment")
+
 	def test_tasks_use_the_fix_check_test_vocabulary(self) -> None:
 		mise = (REFERENCES / "mise.toml").read_text()
 		for task in ("fix", "check", "test"):

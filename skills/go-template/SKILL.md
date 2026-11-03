@@ -66,8 +66,10 @@ The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only 
 - Configure the Go steps, the format steps, the secret scan, and the whitespace steps from the same reference.
 - Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `gitleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
-  Preserve its least-privilege permissions and pinned actions.
-  Check current action versions before changing pins.
+  Preserve its least-privilege permissions.
+  Pin each action to a full commit SHA and keep its release tag in a comment.
+  The tag MUST be the latest release of that action that is at least 24 hours old.
+  The agent MUST confirm the tag, its date, and its SHA in the action's GitHub repository, and MUST NOT pin a release published within 24 hours.
 
 A custom step MUST carry a comment that states why no built-in fits.
 If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.
