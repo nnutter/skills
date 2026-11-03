@@ -33,6 +33,20 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 If a required reference is unavailable, the agent MUST report the missing file and MUST NOT claim that the baseline is complete.
 
+## Tool versions
+
+Every development tool MUST use `latest`, except `hk`.
+`hk` MUST be pinned, because `hk.pkl` imports an exact hk release and the step types of 2 releases do not match.
+The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
+
+- the hk package release, such as `v2.10.0/hk@2.10.0`;
+- the `hk-config` package release, whose version is `<hk-version>-<revision>`, such as `v2.10.0-4/hk-config@2.10.0-4`.
+
+The agent MUST run `mise upgrade` after it writes the pins.
+`mise install` keeps an existing `latest` installation and does not refresh it, so a stale installation can run an older tool than the pin names.
+A tool installed outside `mise` can also shadow the pinned one inside a Git hook, because the Git installation can put its own prefix ahead of the `mise` tool paths.
+The agent MUST compare `mise which TOOL` with the command that the hook runs when a hook reports a version it should not.
+
 ## Required baseline
 
 The agent MUST configure `mise` to install the required tools and `hk` to run formatters and linters.
@@ -90,7 +104,7 @@ The agent MUST NOT remove an existing publishing workflow without approval.
 
 ## Verification
 
-For a repository with Go packages, run `mise run setup`, `mise run fix`, `mise run test`, `mise run check`, and `mise run ci-test` when their prerequisites are available. `mise run setup` changes Git hooks; follow the Git hook migration procedure before running it.
+For a repository with Go packages, run `mise upgrade`, `mise run setup`, `mise run fix`, `mise run test`, `mise run check`, and `mise run ci-test` when their prerequisites are available. `mise run setup` changes Git hooks; follow the Git hook migration procedure before running it.
 Inspect changes produced by fix tasks.
 If the repository has no Go packages or a required tool or service is unavailable, report the commands not run and why.
 Do not claim CI or Homebrew publishing has been verified without exercising it.
