@@ -14,12 +14,17 @@ The hk version in both imports must equal the `hk` pin in `mise.toml`, and the `
 Every other tool takes the latest release.
 `references/tools.md` lists the recommended tool for each language and format.
 
+Copy `.github/workflows/release.yaml` when the repository publishes a program.
+Replace `BINARY_PLACEHOLDER` with the binary name and `MAIN_PACKAGE_PLACEHOLDER` with the package to build, such as `.` or `./cmd/name`.
+The workflow builds macOS and Linux binaries for arm64 and amd64 on a `v*` tag and publishes them with checksums.
+
 Copy `.github/workflows/update-tap.yaml` only when the project publishes a Homebrew formula.
 Replace `FORMULA_NAME_PLACEHOLDER`, `TAP_OWNER_PLACEHOLDER`, and `TAP_REPOSITORY_PLACEHOLDER` with the formula name, tap owner, and tap repository.
 The tap must provide `bin/update-formula`.
 Configure the `APP_CLIENT_ID` repository variable and `APP_PRIVATE_KEY` secret for a GitHub App that can write to the tap and open pull requests.
 
 Keep GitHub Actions expressions such as `${{ github.ref }}` and hk placeholders such as `{{files}}` unchanged.
+Every action is pinned to a commit SHA with its release tag in a comment; pin the latest tag that is at least 24 hours old and confirm it in the action's repository.
 Run `mise upgrade` to install the tools at the versions the pins name, and run `go mod tidy` to resolve the project's Go dependencies.
 Use `mise run check` for non-writing checks and `mise run fix` to apply fixes.
 A fix can change files across a Go module, because hk's `go fix` and `go mod tidy` steps run at the module workspace; inspect the changes before committing.
