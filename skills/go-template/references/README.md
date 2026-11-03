@@ -12,7 +12,7 @@ Replace these placeholders before you use the files:
 `hk.pkl` imports 2 packages: hk's own builtins and the extra builtins from `nnutter/hk-config`.
 The hk version in both imports must equal the `hk` pin in `mise.toml`, and the `hk-config` version is that hk version plus a revision.
 Every other tool takes the latest release, and `mise.lock` is tracked so that a `latest` pin resolves to the same release on every machine.
-`.gitignore` keeps `/.mise/`, where some backends write build scaffolding, and the coverage output.
+Track `.mise/` with it: a lock entry for a Python tool points at a sidecar directory there, and a checkout without it cannot install the tool.
 `references/tools.md` lists the recommended tool for each language and format.
 
 Copy `.github/workflows/release.yaml` when the repository is a Go application; a library does not publish binaries and does not need it.
