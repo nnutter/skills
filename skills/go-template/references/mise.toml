@@ -1,22 +1,34 @@
+[settings]
+minimum_release_age = "0"
+
 [tools]
+# hk is the only pinned tool. Its version must equal the version in hk.pkl, in
+# both the hk import and the hk-config import.
+hk = "2.10.0"
 go = "latest"
-hk = "2.8.0"
+gitleaks = "latest"
+gofumpt = "latest"
 pkl = "latest"
+staticcheck = "latest"
 tombi = "latest"
 yamlfmt = "latest"
-gofumpt = "latest"
-staticcheck = "latest"
-gitleaks = "latest"
+# Git 2.54 and later lets hk install config-based hooks instead of script
+# shims, so the hook mechanism does not depend on the host Git. The package is
+# about 260 MB and every repository on the machine shares it.
+"conda:git" = "latest"
+# Prefer a published release over a compile: the github: backend downloads the
+# macOS and Linux binaries for arm64 and amd64, and the go: backend builds the
+# tool on every machine. A tool with no release for both platforms keeps go:.
+"github:alecthomas/go-check-sumtype" = "latest"
+"github:nnutter/constable" = "latest"
+"github:nnutter/mdlint" = "latest"
+"github:nnutter/timber" = "latest"
+"github:securego/gosec" = "latest"
+"go:github.com/kisielk/errcheck" = "latest"
+"go:github.com/nnutter/testifylint" = "latest"
+"go:go.uber.org/nilaway/cmd/nilaway" = "latest"
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
-"go:github.com/securego/gosec/v2/cmd/gosec" = "latest"
-golangci-lint = "2.15.0"
-"go:github.com/alecthomas/go-check-sumtype/cmd/go-check-sumtype" = "latest"
-"go:github.com/kisielk/errcheck" = "latest"
-"go:github.com/nnutter/constable/cmd/constable" = "latest"
-"go:go.uber.org/nilaway/cmd/nilaway" = "latest"
-"github:nnutter/mdlint" = "latest"
-"go:github.com/nnutter/timber" = "latest"
 
 [tasks.all]
 description = "Run fix, test, and check"
@@ -35,22 +47,16 @@ run = "go test -coverprofile=coverage.out -covermode=atomic ./... && go tool cov
 description = "Install hk git hooks"
 run = "hk install --mise"
 
-[tasks.pre-commit]
-description = "Run the staged hk pre-commit hook"
-run = "hk run pre-commit"
-
 [tasks.test]
 description = "Run tests with coverage"
 run = "go test -cover ./..."
 
 [tasks.fix]
-description = "Fix all files, or safely fix only the supplied files"
+description = "Fix all files, or only the supplied files"
 usage = 'arg "[staged_files]" var=#true'
-# Only the explicit all-files hook can run module-wide writers. A scoped fix
-# checks go fix, testifylint, and tidy instead of changing unselected files.
 run = '''
 if [ -z "${usage_staged_files:-}" ]; then
-  hk run fix-all --all
+  hk fix --all
 else
   hk fix ${usage_staged_files}
 fi
