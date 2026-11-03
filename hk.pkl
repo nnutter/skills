@@ -1,33 +1,33 @@
-amends "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Config.pkl"
-import "package://github.com/jdx/hk/releases/download/v2.8.0/hk@2.8.0#/Builtins.pkl"
+amends
+  "package://github.com/nnutter/hk-config/releases/download/v2.10.0-4/hk-config@2.10.0-4#/Config.pkl"
+
+import "package://github.com/jdx/hk/releases/download/v2.10.0/hk@2.10.0#/Builtins.pkl" as Hk
+import
+  "package://github.com/nnutter/hk-config/releases/download/v2.10.0-4/hk-config@2.10.0-4#/Builtins.pkl"
+  as Extra
 
 steps {
-  ["markdown"] {
-    glob = "**/*.md"
-    check = "mdlint format --check {{files}} && mdlint check --no-fix {{files}}"
-    fix = "mdlint format {{files}} && mdlint check --fix {{files}}"
-  }
-  ["shellcheck"] = (Builtins.shellcheck) {
+  ["gitleaks"] = Hk.gitleaks
+  ["mdlint"] = Extra.mdlint
+  ["newlines"] = Hk.newlines
+  ["pkl"] = (Hk.pkl) { depends = List("pkl_format") }
+  ["pkl_format"] = Hk.pkl_format
+  ["shellcheck"] = (Hk.shellcheck) {
     match_any = null
-    glob = "skill-tests/verify-tasks.sh"
+    glob = "**/*.sh"
   }
-  ["gitleaks"] = Builtins.gitleaks
+  ["skills_ref"] = Extra.skills_ref
+  ["tombi"] = (Hk.tombi) { depends = List("tombi_format") }
+  ["tombi_format"] = Hk.tombi_format
+  ["trailing_whitespace"] = Hk.trailing_whitespace
+  ["yamlfmt"] = Hk.yamlfmt
 }
 
 hooks {
   ["commit-msg"] {
     fix = true
     steps {
-      ["change-id"] {
-        fix = "timber review commit-msg {{commit_msg_file}}"
-      }
-    }
-  }
-  ["pre-commit"] {
-    fix = true
-    stage = true
-    steps {
-      ["test"] { check = "mise run test" }
+      ["change-id"] = Extra.timber_commit_msg
     }
   }
 }

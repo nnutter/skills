@@ -1,67 +1,59 @@
+[settings]
+minimum_release_age = "0"
+
 [tools]
-go = "latest"
-hk = "latest"
-"github:nnutter/mdlint" = "latest"
-"go:github.com/nnutter/timber" = "latest"
+# hk is the only pinned tool: hk.pkl imports this exact version, and the
+# hk-config package version carries it too.
+hk = "2.10.0"
 gitleaks = "latest"
+"go:github.com/nnutter/timber" = "latest"
+"github:nnutter/mdlint" = "latest"
+pkl = "latest"
+"pypi:agentskills-tools" = "latest"
 shellcheck = "latest"
-"pipx:skills-ref" = "0.1.1"
+tombi = "latest"
+yamlfmt = "latest"
 
 [tasks.all]
-description = "Run checks and tests"
-depends = ["check", "test"]
+description = "Run fix, test, and check"
+run = [{ task = "fix" }, { task = "test" }, { task = "check" }]
 
 [tasks.setup]
 description = "Install hk git hooks"
-run = "mise exec -- hk install --mise"
-
-[tasks.fix-mdlint]
-description = "Format and fix Markdown"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-set -eo pipefail
-if [ -z "${usage_staged_files:-}" ]; then
-  hk fix --all --step markdown
-else
-  # shellcheck disable=SC2086
-  hk fix --step markdown -- ${usage_staged_files}
-fi
-'''
-
-[tasks.check-mdlint]
-description = "Check Markdown formatting and lint without writing"
-usage = 'arg "[staged_files]" var=#true'
-run = '''
-#!/usr/bin/env bash
-set -eo pipefail
-if [ -z "${usage_staged_files:-}" ]; then
-  hk check --all --step markdown
-else
-  # shellcheck disable=SC2086
-  hk check --step markdown -- ${usage_staged_files}
-fi
-'''
-
-[tasks.fix]
-description = "Format and fix Markdown"
-usage = 'arg "[staged_files]" var=#true'
-run = "mise run fix-mdlint ${usage_staged_files}"
-
-[tasks.check]
-description = "Run checks without writing"
-usage = 'arg "[staged_files]" var=#true'
-run = [
-  "mise run check-mdlint ${usage_staged_files}",
-  "agentskills validate skills/go-template",
-  "hk check --all --step shellcheck",
-  "hk check --all --step gitleaks",
-]
+run = "hk install --mise"
 
 [tasks.test]
-description = "Run offline reference tests"
+description = "Run the reference tests"
 run = "python3 -B -m unittest discover -s skill-tests -v"
 
 [tasks.test-integration]
-description = "Exercise reference tasks in a disposable Go repository"
+description = "Exercise the reference tasks in a disposable Go repository"
 run = "bash skill-tests/verify-tasks.sh"
+
+[tasks.fix]
+description = "Fix all files, or only the supplied files"
+usage = 'arg "[staged_files]" var=#true'
+run = '''
+if [ -z "${usage_staged_files:-}" ]; then
+  hk fix --all
+else
+  hk fix ${usage_staged_files}
+fi
+'''
+
+[tasks.check]
+description = "Check all files without writing fixes"
+run = "hk check --all"
+
+[tasks.on-start]
+description = "Run fix, test, and check before the agent starts"
+run = [{ task = "all" }]
+
+[tasks.on-stop]
+description = "Fix edited files, then test and check"
+usage = 'arg "[staged_files]" var=#true'
+run = [
+  "mise run fix ${usage_staged_files}",
+  "mise run test",
+  "mise run check",
+]
