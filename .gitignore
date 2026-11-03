@@ -1,1 +1,4 @@
 coverage.out
+# mise scaffolding, except the uv lock sidecars that mise.lock embeds.
+/.mise/*
+!/.mise/locks/

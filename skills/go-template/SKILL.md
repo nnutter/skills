@@ -47,7 +47,7 @@ The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
 The agent MUST run `mise upgrade` after it writes the pins.
 The agent MUST track `mise.lock`, which records the release that each `latest` pin resolved to, so a run has the same versions on every machine and in CI.
 The agent MUST run `mise lock` after it changes a pin and MUST NOT add the lock file to `.gitignore`.
-A lock entry for a Python tool points at a sidecar directory under `.mise/`, so the agent MUST track that directory too; a checkout without it cannot install the tool.
+A lock entry for a Python tool points at a sidecar directory under `.mise/locks/`, so the agent MUST track that directory and MAY ignore the rest of `.mise/`; a checkout without the sidecar cannot install the tool.
 `mise install` keeps an existing `latest` installation and does not refresh it, so a stale installation can run an older tool than the pin names.
 `hk` runs its steps in the environment that `mise` provides, so use the `mise` tasks such as `mise run fix` and `mise run check`.
 A bare `hk` command runs whatever tools the shell resolves, which is not necessarily the pinned ones.
