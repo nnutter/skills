@@ -16,7 +16,9 @@ steps {
     match_any = null
     glob = "**/*.sh"
   }
-  ["skills_ref"] = Extra.skills_ref
+  // Validation runs after the Markdown fixer, so a formatter that rewrites the
+  // frontmatter fails the hook instead of committing an invalid skill.
+  ["skills_ref"] = (Extra.skills_ref) { depends = List("mdlint") }
   ["tombi"] = (Hk.tombi) { depends = List("tombi_format") }
   ["tombi_format"] = Hk.tombi_format
   ["trailing_whitespace"] = Hk.trailing_whitespace
