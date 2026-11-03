@@ -5,7 +5,7 @@ description: Set up or adopt the Go repository tooling baseline, mise tasks, Git
 
 # Go repository tooling
 
-Use this skill to apply the repository tooling baseline without `git-tpl`.
+Use this skill to apply the repository tooling baseline.
 This skill does not define Go package or application defaults.
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all capitals, as shown here.
@@ -24,9 +24,10 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 1. Read the relevant files in `references/` relative to this skill.
    Adapt their project-specific values and merge their configurations into the target.
    Do not leave template directives or unresolved placeholders in the target.
+1. Remove the `git-tpl` template layer.
+   Delete `.config/git.tpl.toml` and every task that runs `git tpl`, such as a template refresh task.
+   Do not add a template remote or create `refs/tpl` merges.
 1. Configure the required tools, tasks, hooks, and CI below.
-   Do not add `git-tpl` or its refresh task.
-   Do not remove existing `git-tpl` configuration unless the user requests removal.
 1. Install or resolve dependencies as appropriate, then verify the result.
    Report any blocked setup or failed check and its cause.
 
