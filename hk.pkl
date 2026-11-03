@@ -16,8 +16,9 @@ steps {
     match_any = null
     glob = "**/*.sh"
   }
-  // Validation runs after the Markdown fixer, so a formatter that rewrites the
-  // frontmatter fails the hook instead of committing an invalid skill.
+  // hk runs every step of a hook in 1 parallel group, so a check can approve a
+  // file that a fixer rewrites afterwards. The dependency makes validation read
+  // the file that gets committed.
   ["skills_ref"] = (Extra.skills_ref) { depends = List("mdlint") }
   ["tombi"] = (Hk.tombi) { depends = List("tombi_format") }
   ["tombi_format"] = Hk.tombi_format
