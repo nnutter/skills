@@ -4,6 +4,9 @@ Each row names the `hk` step and the tool that the step runs.
 Take the step from `nnutter/hk-config` when it has one, then from hk's own builtins, and add a custom step only when neither fits.
 Install the tool with `mise`; the step only supplies the command, the file patterns, and the fix command.
 
+Install from a published release when one covers macOS and Linux on arm64 and amd64, such as `github:nnutter/constable`.
+The `go:` backend compiles the tool on every machine and every CI run, so use it only for a tool that publishes no release for both platforms.
+
 ## Go
 
 | Step | Source | Tool | Notes |
@@ -20,7 +23,7 @@ Install the tool with `mise`; the step only supplies the command, the file patte
 | `nilaway` | hk-config | `nilaway` | Checks this module's packages only. |
 | `constable` | hk-config | `constable` | Non-mutating contracts, complexity, and predicates. |
 | `go_check_sumtype` | hk-config | `go-check-sumtype` | Requires an exhaustive switch over a sum type. |
-| `testifylint` | hk-config | `testifylint` | Install `github.com/nnutter/testifylint`; the 1.6 release cannot load packages from a current Go toolchain. |
+| `testifylint` | hk-config | `testifylint` | Install `github.com/nnutter/testifylint` with the `go:` backend; the 1.6 release cannot load packages from a current Go toolchain and it publishes no binary release. |
 | `gohawk` | hk-config | `gohawk` | Optional: resource lifetime and concurrency bugs. |
 | `golangci_lint` | hk | `golangci-lint` | Use when 1 run must cover many analyzers. |
 
@@ -29,7 +32,7 @@ Install the tool with `mise`; the step only supplies the command, the file patte
 | Step | Source | Tool | Notes |
 | --- | --- | --- | --- |
 | `mdlint` | hk-config | `mdlint` | Install `github:nnutter/mdlint`. |
-| `skills_ref` | hk-config | `agentskills` | Validates the front matter of each `SKILL.md`. Install `pypi:agentskills-tools`. |
+| `skills_ref` | hk-config | `agentskills` | Use only when the repository contains skills. Validates the front matter of each `SKILL.md` and needs `pypi:agentskills-tools`. |
 | `yamlfmt` | hk | `yamlfmt` | Formats YAML, including workflows. |
 | `tombi_format`, `tombi` | hk | `tombi` | Formats, then lints, TOML. |
 | `pkl_format`, `pkl` | hk | `pkl` | Formats, then evaluates, Pkl. |

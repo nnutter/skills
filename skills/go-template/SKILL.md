@@ -36,6 +36,8 @@ If a required reference is unavailable, the agent MUST report the missing file a
 ## Tool versions
 
 Every development tool MUST use `latest`, except `hk`.
+A repository whose own code is Python MAY pin `python` and `uv`, because the supported range belongs to that code.
+When Python only runs repository scripts, `python` MUST use `latest`.
 `hk` MUST be pinned, because `hk.pkl` imports an exact hk release and the step types of 2 releases do not match.
 The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
 
@@ -43,13 +45,16 @@ The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
 - the `hk-config` package release, whose version is `<hk-version>-<revision>`, such as `v2.10.0-4/hk-config@2.10.0-4`.
 
 The agent MUST run `mise upgrade` after it writes the pins.
-`mise install` keeps an existing `latest` installation and does not refresh it, so a stale installation can run an older tool than the pin names.
+The agent MUST track `mise.lock`, which records the release that each `latest` pin resolved to, so a run has the same versions on every machine and in CI.
+The agent MUST run `mise lock` after it changes a pin and MUST NOT add the lock file to `.gitignore`. `mise install` keeps an existing `latest` installation and does not refresh it, so a stale installation can run an older tool than the pin names.
 `hk` runs its steps in the environment that `mise` provides, so use the `mise` tasks such as `mise run fix` and `mise run check`.
 A bare `hk` command runs whatever tools the shell resolves, which is not necessarily the pinned ones.
 
 ## Required baseline
 
 The agent MUST configure `mise` to install the required tools and `hk` to run formatters and linters.
+Install each tool from a published release when one covers macOS and Linux on arm64 and amd64, such as a `github:` backend, instead of compiling it from source on every machine.
+When the repository contains skills, the agent MUST configure the `skills_ref` step, which is an `hk` built-in, and MUST install its `agentskills` command from `pypi:agentskills-tools`.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
 `hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
 `hk` installs config-based Git hooks on Git 2.54 or later and writes script shims on an older Git.
