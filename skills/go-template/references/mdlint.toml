@@ -1,6 +1,11 @@
 # mdlint configuration. See mdlint.default.toml in the mdlint repository
 # for the full annotated reference.
 
+# Accept YAML front matter in every Markdown file. Auto-detection has to guess
+# from the first line, and a wrong guess formats the front matter as prose: the
+# delimiters become headings and the fields join into 1 line.
+front_matter = "---"
+
 # MD013 (line length) disabled: long URLs and table rows are common and
 # the formatter does not wrap prose, so the rule is noise here.
 [rules.MD013]
