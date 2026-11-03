@@ -5,6 +5,9 @@ minimum_release_age = "0"
 # hk is the only pinned tool: hk.pkl imports this exact version, and the
 # hk-config package version carries it too.
 hk = "2.10.0"
+# Git 2.54 and later lets hk install config-based hooks, so hooks do not need
+# files in .git/hooks. A system Git below 2.54 falls back to script shims.
+"conda:git" = "latest"
 gitleaks = "latest"
 "go:github.com/nnutter/timber" = "latest"
 "github:nnutter/mdlint" = "latest"
