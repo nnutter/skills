@@ -56,20 +56,23 @@ The `commit-msg` hook MUST run `timber review commit-msg` through the `timber_co
 That hook supersedes the `git-review commit-msg` hook, and every `github.com/nnutter` repository uses it.
 Use `references/mise.toml` and `references/hk.pkl` as the configuration references.
 
-- Go: configure `go-fumpt`, `go-imports`, `go-sec`, `go-vet`, `go-vuln-check`, `go-fix`, `staticcheck`, and `gomod-tidy`.
-- Pkl: configure `pkl` and `pkl-format`.
-- TOML: configure `tombi` and `tombi-format`.
-- YAML: configure `yamlfmt`.
+- Configure the recommended tool for each language and format in `references/tools.md`.
+- Configure the Go steps, the format steps, the secret scan, and the whitespace steps from the same reference.
 - Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `gitleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
   Preserve its least-privilege permissions and pinned actions.
   Check current action versions before changing pins.
 
+A custom step MUST carry a comment that states why no built-in fits.
+If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.
+
 The agent MUST preserve tests, coverage, setup, and the `on-start` and `on-stop` hooks.
 The pre-commit hook MUST scan staged content for secrets regardless of file type.
 For an existing repository, adapt commands to its structure without removing these capabilities.
 Some `hk` Go built-ins operate on a whole module even when given selected files.
-The agent MUST account for these effects and MUST NOT silently overwrite unrelated or unstaged changes.
+hk's `go_fix` and `gomod_tidy` steps run at the module workspace, so a fix of 1 Go file can rewrite other files in that module.
+The `pre-commit` hook therefore stashes unstaged changes.
+The agent MUST inspect the diff after a fix instead of assuming that it touches only the named files.
 The `go-fix` built-in requires Go 1.26 or later; use a compatible toolchain without silently changing an existing module's minimum Go version.
 
 ## Git hook migration
