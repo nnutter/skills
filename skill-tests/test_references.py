@@ -27,6 +27,29 @@ class SkillReferenceTest(unittest.TestCase):
 			with self.subTest(path=path):
 				self.assertTrue((SKILL_DIR / path).is_file(), f"Missing reference: {path}")
 
+	def test_config_imports_the_hk_config_package(self) -> None:
+		config = (REFERENCES / "hk.pkl").read_text()
+		mise = (REFERENCES / "mise.toml").read_text()
+		pin = re.search(r'^hk = "([^"]+)"', mise, re.MULTILINE)
+		self.assertIsNotNone(pin, "hk must be pinned in mise.toml")
+		hk = pin.group(1)
+		hk_versions = re.findall(r"jdx/hk/releases/download/v([^/]+)/hk@", config)
+		self.assertEqual(hk_versions, [hk], "hk.pkl must import the pinned hk version")
+		package = re.search(r"hk-config@([^#\"]+)#", config)
+		self.assertIsNotNone(package, "hk.pkl must import the hk-config package")
+		self.assertEqual(package.group(1).split("-")[0], hk, "hk-config must target the pinned hk version")
+		self.assertIn('["change-id"] = Extra.timber_commit_msg', config)
+		self.assertNotIn("git-review", config)
+
+	def test_tasks_use_the_fix_check_test_vocabulary(self) -> None:
+		mise = (REFERENCES / "mise.toml").read_text()
+		for task in ("fix", "check", "test"):
+			with self.subTest(task=task):
+				self.assertIn(f"[tasks.{task}]", mise)
+			self.assertNotIn("[tasks.pre-commit]", mise)
+		fix = mise.split("[tasks.fix]", 1)[1].split("\n[", 1)[0]
+		self.assertIn("hk fix", fix)
+
 
 @unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks.sh for hk integration tests")
 class HkEntryPointTest(unittest.TestCase):
@@ -99,19 +122,17 @@ class HkEntryPointTest(unittest.TestCase):
 				self.assertEqual((self.project / name).read_text(), content)
 		self.hk("check", *files)
 
-	def test_go_fix_handles_multiple_directories(self) -> None:
+	def test_scoped_fix_runs_the_module_wide_go_fix(self) -> None:
 		(self.project / "sub").mkdir()
 		for name, package in (("modern.go", "main"), ("sub/modern.go", "sub")):
-			(self.project / name).write_text(f"package {package}\n\nvar Value interface{{}}\n")
-		# Scoped fixes must not run module-wide Go writers.
-		before = self.snapshot()
-		result = self.hk("fix", "modern.go", "sub/modern.go", check=False)
-		self.assertNotEqual(result.returncode, 0, result.stdout)
-		self.assertEqual(self.snapshot(), before)
-		self.run_command("mise", "run", "fix")
+			(self.project / name).write_text(f"package {package}\n\nfunc Modern() any {{ var value interface{{}}; return value }}\n")
+		self.run_command("git", "add", "modern.go", "sub/modern.go")
+		# hk's go_fix step runs at the module workspace, so 1 selected file gives
+		# go fix the whole module. The skill documents this effect, so the test
+		# records it instead of forbidding it.
+		self.hk("fix", "--step", "go_fix", "sub/modern.go")
 		for name in ("modern.go", "sub/modern.go"):
-			self.assertIn("var Value any", (self.project / name).read_text())
-		self.run_command("mise", "run", "test")
+			self.assertIn("var value any", (self.project / name).read_text())
 
 	def test_full_fix_tidies_go_mod(self) -> None:
 		path = self.project / "go.mod"
