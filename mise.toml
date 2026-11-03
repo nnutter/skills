@@ -12,6 +12,9 @@ gitleaks = "latest"
 # Python only runs the tests and scripts here, so it takes the latest release;
 # a repository whose own code is Python may pin it.
 python = "latest"
+# The pypi backend builds the agentskills lock with uv, so uv is a tool here
+# rather than something the backend borrows from the host.
+uv = "latest"
 "go:github.com/nnutter/timber" = "latest"
 "github:nnutter/mdlint" = "latest"
 pkl = "latest"
