@@ -21,11 +21,17 @@ FIXTURE = os.environ.get("GO_TEMPLATE_TEST_PROJECT")
 class SkillReferenceTest(unittest.TestCase):
 	def test_referenced_files_exist(self) -> None:
 		skill = (SKILL_DIR / "SKILL.md").read_text()
-		paths = re.findall(r"`(references/[^`]+)`", skill)
+		paths = re.findall(r"`((?:references|scripts)/[^`]+)`", skill)
 		self.assertTrue(paths, "The skill must identify its reference files")
+		self.assertTrue(any(path.startswith("references/") for path in paths))
 		for path in paths:
+			# A path in backticks can be followed by its arguments.
+			path = path.split()[0]
 			with self.subTest(path=path):
-				self.assertTrue((SKILL_DIR / path).is_file(), f"Missing reference: {path}")
+				target = SKILL_DIR / path
+				self.assertTrue(target.is_file(), f"Missing file: {path}")
+				if path.startswith("scripts/"):
+					self.assertTrue(os.access(target, os.X_OK), f"Not executable: {path}")
 
 	def test_config_imports_the_hk_config_package(self) -> None:
 		config = (REFERENCES / "hk.pkl").read_text()

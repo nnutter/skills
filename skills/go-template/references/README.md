@@ -26,6 +26,7 @@ Configure the `APP_CLIENT_ID` repository variable and `APP_PRIVATE_KEY` secret f
 
 Keep GitHub Actions expressions such as `${{ github.ref }}` and hk placeholders such as `{{files}}` unchanged.
 Every action is pinned to a commit SHA with its release tag in a comment; pin the latest tag that is at least 24 hours old and confirm it in the action's repository.
+Run `scripts/pin-action OWNER/REPO` for the tag and SHA, and confirm the result in the action's repository.
 Run `mise upgrade` to install the tools at the versions the pins name, run `mise lock` to record them, and run `go mod tidy` to resolve the project's Go dependencies.
 Use `mise run check` for non-writing checks and `mise run fix` to apply fixes.
 A fix can change files across a Go module, because hk's `go fix` and `go mod tidy` steps run at the module workspace; inspect the changes before committing.

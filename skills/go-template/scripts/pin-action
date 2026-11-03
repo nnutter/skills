@@ -1,0 +1,137 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.9"
+# dependencies = []
+# ///
+"""Print the pin for a GitHub Action: the newest version at least 24 hours old.
+
+Usage: pin-action OWNER/REPO [OWNER/REPO ...]
+
+The output is the line a workflow uses, with the tag in a comment:
+
+    actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+The version decides, not the release date: an action can republish an old
+release, so the newest publication is not the newest version. A version
+published less than 24 hours ago is not eligible, because a bad release should
+reach other people before it reaches this repository.
+
+Pass GH_TOKEN to raise the API rate limit; the script reads it from the
+environment and never prints it.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.request
+from datetime import datetime, timedelta, timezone
+
+API = "https://api.github.com"
+MIN_AGE = timedelta(hours=24)
+VERSION = re.compile(r"^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?$")
+
+
+def get(path: str) -> object:
+    """GET a GitHub API path and return the decoded body."""
+    request = urllib.request.Request(
+        API + path,
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "pin-action"},
+    )
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.load(response)
+
+
+def released_at(value: str) -> datetime:
+    """Parse an API timestamp into an aware datetime."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def version_key(tag: str) -> tuple[int, int, int] | None:
+    """Return a comparable version for a release tag, or None."""
+    match = VERSION.match(tag)
+    if match is None:
+        return None
+    return tuple(int(part or 0) for part in match.groups())  # type: ignore[return-value]
+
+
+def collect(candidates: list[tuple[str, str]]) -> dict[str, datetime]:
+    """Map each version tag to its publication date."""
+    dated: dict[str, datetime] = {}
+    for tag, published in candidates:
+        if version_key(tag) is None:
+            continue
+        dated.setdefault(tag, released_at(published))
+    return dated
+
+
+def release_tags(repo: str) -> list[tuple[str, str]]:
+    """Return (tag, published) for every published release."""
+    releases = get(f"/repos/{repo}/releases?per_page=100")
+    assert isinstance(releases, list)
+    return [
+        (release["tag_name"], release["published_at"])
+        for release in releases
+        if not release["draft"] and not release["prerelease"] and release["published_at"]
+    ]
+
+
+def tag_commits(repo: str) -> list[tuple[str, str]]:
+    """Return (tag, commit date) for actions that cut no releases."""
+    tags = get(f"/repos/{repo}/tags?per_page=100")
+    assert isinstance(tags, list)
+    dated = []
+    for tag in tags:
+        commit = get(f"/repos/{repo}/commits/{tag['name']}")
+        assert isinstance(commit, dict)
+        dated.append((tag["name"], commit["commit"]["committer"]["date"]))
+    return dated
+
+
+def check(repo: str, now: datetime) -> bool:
+    """Print the pin line for one action and report whether it was found."""
+    dated = collect(release_tags(repo)) or collect(tag_commits(repo))
+    if not dated:
+        print(f"{repo}: no version tag to pin", file=sys.stderr)
+        return False
+    ranked = sorted(dated.items(), key=lambda item: (version_key(item[0]), item[1]))
+    newest_tag, newest_date = ranked[-1]
+    eligible = [item for item in ranked if now - item[1] >= MIN_AGE]
+    if not eligible:
+        print(f"{repo}: every version is less than {MIN_AGE} old", file=sys.stderr)
+        return False
+    tag, date = eligible[-1]
+    if tag != newest_tag:
+        print(
+            f"{repo}: {newest_tag} is {now - newest_date} old, too new to pin",
+            file=sys.stderr,
+        )
+    commit = get(f"/repos/{repo}/commits/{tag}")
+    assert isinstance(commit, dict)
+    print(f"{repo}@{commit['sha']} # {tag}")
+    return True
+
+
+def main(argv: list[str]) -> int:
+    """Pin each action named on the command line."""
+    if not argv or any("/" not in name for name in argv):
+        raise SystemExit(__doc__.splitlines()[0] + "\n\nUsage: pin-action OWNER/REPO ...")
+    now = datetime.now(timezone.utc)
+    ok = True
+    for name in argv:
+        try:
+            ok = check(name, now) and ok
+        except urllib.error.HTTPError as error:
+            print(f"{name}: {error.code} {error.reason}", file=sys.stderr)
+            ok = False
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
