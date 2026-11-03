@@ -51,6 +51,9 @@ The agent MUST compare `mise which TOOL` with the command that the hook runs whe
 
 The agent MUST configure `mise` to install the required tools and `hk` to run formatters and linters.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
+`hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
+The `commit-msg` hook MUST run `timber review commit-msg` through the `timber_commit_msg` built-in in `references/hk.pkl`.
+That hook supersedes the `git-review commit-msg` hook, and every `github.com/nnutter` repository uses it.
 Use `references/mise.toml` and `references/hk.pkl` as the configuration references.
 
 - Go: configure `go-fumpt`, `go-imports`, `go-sec`, `go-vet`, `go-vuln-check`, `go-fix`, `staticcheck`, and `gomod-tidy`.
@@ -88,8 +91,10 @@ The agent MUST obtain approval before removing or replacing hooks or uninstallin
 
 For each manager to remove, consult the uninstall instructions for the installed version and inspect their effects before running them.
 For Lefthook, consult `lefthook uninstall --help` or its documentation and use its documented uninstall process after approval.
+`hk migrate pre-commit` reads a pre-commit or prek configuration, so inspect its output instead of trusting it.
 Do not assume a manager's uninstall command affects only its own files or handles every hooks directory.
 After uninstalling, inspect the effective hooks directory again, resolve remaining conflicts, install `hk`, and verify that the preserved behavior runs.
+A `git-review commit-msg` hook MUST become the `timber` hook, and the agent MUST remove the `git-review` dependency when nothing else uses it.
 Report any behavior that could not be preserved.
 
 ## Conditional Homebrew publishing
