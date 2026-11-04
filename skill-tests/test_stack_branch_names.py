@@ -22,6 +22,9 @@ class StackBranchNamesTest(unittest.TestCase):
 		self.addCleanup(self.tmp.cleanup)
 		self.project = Path(self.tmp.name)
 		self.run_git("init", "-q")
+		# CI has no global identity, so the fixture sets 1 of its own.
+		self.run_git("config", "user.name", "Test")
+		self.run_git("config", "user.email", "test@example.invalid")
 		self.run_git("commit", "-q", "--allow-empty", "-m", "Base")
 
 	def run_git(self, *args: str) -> subprocess.CompletedProcess[str]:
