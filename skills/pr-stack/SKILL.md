@@ -174,7 +174,7 @@ This command MUST print nothing.
 Run the repository checks at every commit, not only at the tip:
 
 ```sh
-scripts/check-history.sh "$base" HEAD -- 'mise run check && mise run test'
+scripts/check-history "$base" HEAD -- 'mise run check && mise run test'
 ```
 
 The script gives each commit a fresh worktree, runs the command, stops at the first failure, and removes the worktree.
@@ -314,7 +314,7 @@ Check the result before you report it:
 - Each stack branch points at the last commit of its group.
   The top branch is the original branch name, and it points at the final commit.
 - Each branch below the top is the original branch name and 2 words from `scripts/stack-branch-names`.
-- `scripts/check-history.sh` reports `OK` for the whole range.
+- `scripts/check-history` reports `OK` for the whole range.
 - `gh stack view --short` lists the branches in the planned order.
 - Each pull request shows the planned base branch: `gh pr view <number> --json baseRefName`.
 - Each pull request title reads as 1 release-note line, and its body is empty: `gh pr view <number> --json title,body`.

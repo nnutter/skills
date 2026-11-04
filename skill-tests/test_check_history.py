@@ -9,7 +9,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
-SCRIPT = ROOT / "skills" / "pr-stack" / "scripts" / "check-history.sh"
+SCRIPT = ROOT / "skills" / "pr-stack" / "scripts" / "check-history"
 
 
 class CheckHistoryTest(unittest.TestCase):
@@ -93,7 +93,7 @@ class CheckHistoryTest(unittest.TestCase):
 	def test_usage_error_names_the_usage(self) -> None:
 		result = self.check_history()
 		self.assertEqual(result.returncode, 2)
-		self.assertIn("Usage: check-history.sh", result.stderr)
+		self.assertIn("Usage: check-history", result.stderr)
 
 	def test_empty_range_is_an_error(self) -> None:
 		self.commit("a.txt")
