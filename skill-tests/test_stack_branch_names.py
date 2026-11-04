@@ -2,11 +2,10 @@
 """Behavior of the PR stack branch name script."""
 
 import os
-from pathlib import Path
-import re
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "skills" / "pr-stack" / "scripts" / "stack-branch-names"
@@ -26,18 +25,30 @@ class StackBranchNamesTest(unittest.TestCase):
 		self.run_git("commit", "-q", "--allow-empty", "-m", "Base")
 
 	def run_git(self, *args: str) -> subprocess.CompletedProcess[str]:
-		result = subprocess.run(("git", *args), cwd=self.project, env=git_environment(), text=True,
-		                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
+		result = subprocess.run(
+			("git", *args),
+			cwd=self.project,
+			env=git_environment(),
+			text=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			timeout=60,
+		)
 		self.assertEqual(result.returncode, 0, result.stdout)
 		return result
 
-	def names(self, *args: str, cwd: Path | None = None, seed: str | None = None,
-	          check: bool = True) -> list[str]:
+	def names(self, *args: str, cwd: Path | None = None, seed: str | None = None, check: bool = True) -> list[str]:
 		env = git_environment()
 		if seed is not None:
 			env["STACK_NAMES_SEED"] = seed
-		result = subprocess.run((str(SCRIPT), *args), cwd=cwd or self.project, env=env, text=True,
-		                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+		result = subprocess.run(
+			(str(SCRIPT), *args),
+			cwd=cwd or self.project,
+			env=env,
+			text=True,
+			capture_output=True,
+			timeout=60,
+		)
 		if check:
 			self.assertEqual(result.returncode, 0, result.stderr)
 		return result.stdout.splitlines()
@@ -77,8 +88,14 @@ class StackBranchNamesTest(unittest.TestCase):
 		# A directory outside the test repository, since Git finds a parent repository.
 		outside = tempfile.TemporaryDirectory()
 		self.addCleanup(outside.cleanup)
-		result = subprocess.run((str(SCRIPT), "foo", "1"), cwd=outside.name, env=git_environment(),
-		                        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+		result = subprocess.run(
+			(str(SCRIPT), "foo", "1"),
+			cwd=outside.name,
+			env=git_environment(),
+			text=True,
+			capture_output=True,
+			timeout=60,
+		)
 		self.assertEqual(result.returncode, 2)
 		self.assertIn("not a git repository", result.stderr)
 

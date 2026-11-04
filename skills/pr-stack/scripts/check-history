@@ -3,11 +3,11 @@
 
 import argparse
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 DEFAULT_COMMAND = "mise run check && mise run test"
 
@@ -23,10 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
 			" build artifact from 1 commit cannot hide a failure in the next one."
 			f" The default command is: {DEFAULT_COMMAND}"
 		),
-		epilog=(
-			"Exit status: 0 when every commit passes, 1 when a commit fails, 2 for a"
-			" usage error."
-		),
+		epilog=("Exit status: 0 when every commit passes, 1 when a commit fails, 2 for a usage error."),
 	)
 	parser.add_argument(
 		"-k",

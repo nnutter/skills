@@ -6,11 +6,11 @@ skills/go-template/references/mise.toml.
 """
 
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REFERENCES = ROOT / "skills" / "go-template" / "references"
@@ -40,9 +40,7 @@ def prepare_project(project: Path) -> None:
 	for name in REFERENCE_FILES:
 		shutil.copy2(REFERENCES / name, project / name)
 	module = project / "go.mod"
-	module.write_text(
-		module.read_text().replace("MODULE_PATH", MODULE_PATH).replace("GO_VERSION", GO_VERSION)
-	)
+	module.write_text(module.read_text().replace("MODULE_PATH", MODULE_PATH).replace("GO_VERSION", GO_VERSION))
 	run("git", "init", "-q", cwd=project)
 	run("git", "config", "user.name", "Integration Test", cwd=project)
 	run("git", "config", "user.email", "integration@example.invalid", cwd=project)
@@ -50,9 +48,7 @@ def prepare_project(project: Path) -> None:
 
 	step("prepare a complete Go module and clean baseline")
 	(project / "main.go").write_text("package main\n\nfunc main() {}\n")
-	(project / "main_test.go").write_text(
-		'package main\n\nimport "testing"\n\nfunc TestExample(t *testing.T) {}\n'
-	)
+	(project / "main_test.go").write_text('package main\n\nimport "testing"\n\nfunc TestExample(t *testing.T) {}\n')
 	(project / "README.md").write_text("# Demo\n")
 	run("mise", "exec", "--", "go", "mod", "tidy", cwd=project)
 	run("mise", "exec", "--", "hk", "validate", cwd=project)

@@ -1,0 +1,12 @@
+# Ruff configuration. See https://docs.astral.sh/ruff/configuration/
+#
+# hk names the files to check, so ruff reads the scripts that have a python
+# shebang and no extension as well as the files that end in .py.
+
+line-length = 120
+
+[format]
+indent-style = "tab"
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

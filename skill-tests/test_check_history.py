@@ -2,11 +2,11 @@
 """Behavioral checks for the pr-stack per-commit check script."""
 
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "skills" / "pr-stack" / "scripts" / "check-history"
@@ -28,8 +28,7 @@ class CheckHistoryTest(unittest.TestCase):
 		return self.command("git", *args)
 
 	def command(self, *args: str) -> subprocess.CompletedProcess[str]:
-		result = subprocess.run(args, cwd=self.repo, env=self.env, text=True,
-		                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+		result = subprocess.run(args, cwd=self.repo, env=self.env, text=True, capture_output=True, timeout=120)
 		self.assertEqual(result.returncode, 0, f"{args!r}\n{result.stdout}\n{result.stderr}")
 		return result
 
@@ -49,8 +48,14 @@ class CheckHistoryTest(unittest.TestCase):
 		return self.git("rev-parse", "HEAD").stdout.strip()
 
 	def check_history(self, *args: str) -> subprocess.CompletedProcess[str]:
-		return subprocess.run([str(SCRIPT), *args], cwd=self.repo, env=self.env, text=True,
-		                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+		return subprocess.run(
+			[str(SCRIPT), *args],
+			cwd=self.repo,
+			env=self.env,
+			text=True,
+			capture_output=True,
+			timeout=120,
+		)
 
 	def worktrees(self) -> list[str]:
 		lines = self.git("worktree", "list", "--porcelain").stdout.splitlines()

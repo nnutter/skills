@@ -19,7 +19,7 @@ uv = "latest"
 "github:nnutter/mdlint" = "latest"
 pkl = "latest"
 "pypi:agentskills-tools" = "latest"
-shellcheck = "latest"
+ruff = "latest"
 tombi = "latest"
 yamlfmt = "latest"
 
