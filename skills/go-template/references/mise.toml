@@ -4,7 +4,7 @@ minimum_release_age = "0"
 [tools]
 # hk is the only pinned tool. Its version must equal the version in hk.pkl, in
 # both the hk import and the hk-config import.
-hk = "2.10.0"
+hk = "2.11.1"
 go = "latest"
 gitleaks = "latest"
 gofumpt = "latest"

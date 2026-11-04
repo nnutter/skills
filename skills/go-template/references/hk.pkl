@@ -1,11 +1,11 @@
 // hk's own builtins and the extra builtins from nnutter/hk-config. The hk
 // version in both package paths must equal the hk pin in mise.toml.
 amends
-  "package://github.com/nnutter/hk-config/releases/download/v2.10.0-4/hk-config@2.10.0-4#/Config.pkl"
+  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-0/hk-config@2.11.1-0#/Config.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v2.10.0/hk@2.10.0#/Builtins.pkl" as Hk
+import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtins.pkl" as Hk
 import
-  "package://github.com/nnutter/hk-config/releases/download/v2.10.0-4/hk-config@2.10.0-4#/Builtins.pkl"
+  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-0/hk-config@2.11.1-0#/Builtins.pkl"
   as Extra
 
 // Take a step from hk-config when it has one: those builtins exist where hk's
