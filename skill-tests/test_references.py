@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reference links and opt-in behavioral checks against installed hk tools.
 
-Run verify-tasks.sh to install tools and enable the integration cases.
+Run verify-tasks to install tools and enable the integration cases.
 """
 
 import os
@@ -71,7 +71,7 @@ class SkillReferenceTest(unittest.TestCase):
 		self.assertIn("hk fix", fix)
 
 
-@unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks.sh for hk integration tests")
+@unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks for hk integration tests")
 class HkEntryPointTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.tmp = tempfile.TemporaryDirectory()
