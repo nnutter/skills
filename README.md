@@ -1,17 +1,20 @@
-# go-template
+# Skills
 
-An agent skill for standardizing Go repository development tools and CI/CD.
+Agent skills for repository tooling, branch wrap-up, and pull requests.
 
 ## Use
 
 ```sh
-npx skills add nnutter/go-template --skill go-template
+npx skills add nnutter/skills --skill go-template
+npx skills add nnutter/skills --skill pr-stack
 ```
 
-Ask the agent to set up or standardize a Go repository with the `go-template` skill.
+## Skills
 
-Start with [`skills/go-template/SKILL.md`](skills/go-template/SKILL.md).
-Reusable configuration examples are in [`skills/go-template/references/`](skills/go-template/references/README.md).
+| Skill | Use it to |
+| --- | --- |
+| [`go-template`](skills/go-template/SKILL.md) | Set up or standardize the tools, mise tasks, Git hooks, and CI of a Go repository. |
+| [`pr-stack`](skills/pr-stack/SKILL.md) | Wrap up a branch: squash trial and error, keep refactors apart from features, check every commit, and open a PR stack. |
 
 ## Develop
 
@@ -22,4 +25,4 @@ mise run test
 mise run test-integration
 ```
 
-The skill's requirements apply to target Go repositories, not to this skill repository itself.
+The requirements in `go-template` apply to target Go repositories, not to this repository.
