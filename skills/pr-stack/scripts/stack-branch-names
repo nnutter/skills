@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""Print branch names for the groups below the top of a pull request stack."""
+
+import argparse
+import os
+import random
+import subprocess
+import sys
+
+# A name is 2 words, so a name can mix 2 themes.
+WORDS = (
+	# SpaceX
+	"falcon",
+	"starship",
+	"raptor",
+	"merlin",
+	"dragon",
+	"booster",
+	"starbase",
+	# Starlink
+	"sat",
+	"dish",
+	"laser",
+	"kit",
+	"beam",
+	# Tesla
+	"semi",
+	"roadster",
+	"powerwall",
+	"megapack",
+	"giga",
+	"plaid",
+	# Neuralink
+	"axon",
+	"neuron",
+	"cortex",
+	"implant",
+	"thread",
+	"probe",
+	# The Boring Company
+	"tunnel",
+	"bore",
+	"brick",
+	"loop",
+	"mole",
+	"pit",
+)
+
+MAX_ATTEMPTS = 100
+
+
+def non_negative_int(text: str) -> int:
+	"""Return a count of 0 or more, and let argparse report a bad number."""
+	try:
+		value = int(text)
+	except ValueError as error:
+		raise argparse.ArgumentTypeError(f"not a number: {text}") from error
+	if value < 0:
+		raise argparse.ArgumentTypeError(f"not a count of 0 or more: {text}")
+	return value
+
+
+def build_parser() -> argparse.ArgumentParser:
+	"""Return the command-line parser for this script."""
+	parser = argparse.ArgumentParser(
+		prog="stack-branch-names.py",
+		description=(
+			"Print 1 branch name for each of COUNT groups below the top of a pull"
+			" request stack, from the bottom of the stack to the top. The top group"
+			" keeps BRANCH, so it needs no name here. A name is BRANCH and 2 random"
+			" words, such as foo-raptor-tunnel. The words come from SpaceX, Starlink,"
+			" Tesla, Neuralink, and The Boring Company terms. The script skips a name"
+			" that a local or a remote branch already has, and a name that it already"
+			" printed."
+		),
+		epilog=(
+			"Environment: STACK_NAMES_SEED seeds the random choice, for a repeatable"
+			" result. Exit status: 0 when it prints every name, 1 when it cannot find"
+			" a new name, 2 for a usage error."
+		),
+	)
+	parser.add_argument(
+		"branch",
+		help="the branch name of the top group, which needs no name here",
+	)
+	parser.add_argument(
+		"count",
+		type=non_negative_int,
+		help="the number of groups below the top",
+	)
+	return parser
+
+
+def in_git_repository() -> bool:
+	"""Return whether the working directory belongs to a Git repository."""
+	result = subprocess.run(
+		("git", "rev-parse", "--git-dir"),
+		stdout=subprocess.DEVNULL,
+		stderr=subprocess.DEVNULL,
+		check=False,
+	)
+	return result.returncode == 0
+
+
+def branch_names() -> set[str]:
+	"""Return the short names of every local and remote branch."""
+	result = subprocess.run(
+		("git", "for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"),
+		capture_output=True,
+		text=True,
+		check=True,
+	)
+	names: set[str] = set()
+	for ref in result.stdout.split():
+		if ref.startswith("refs/heads/"):
+			names.add(ref.removeprefix("refs/heads/"))
+		elif ref.startswith("refs/remotes/"):
+			# Drop the name of the remote, so origin/foo and foo look alike.
+			names.add(ref.removeprefix("refs/remotes/").partition("/")[2])
+	return names
+
+
+def draw_name(branch: str, taken: set[str], generator: random.Random) -> str | None:
+	"""Return a new branch name, or None when every attempt is taken."""
+	for _ in range(MAX_ATTEMPTS):
+		first, second = generator.sample(WORDS, 2)
+		name = f"{branch}-{first}-{second}"
+		if name not in taken:
+			return name
+	return None
+
+
+def main(argv: list[str] | None = None) -> int:
+	"""Print the names, and return the exit status."""
+	parser = build_parser()
+	args = parser.parse_args(argv)
+	if not args.branch:
+		parser.error("the branch name cannot be empty")
+	if not in_git_repository():
+		print("stack-branch-names.py: not a git repository", file=sys.stderr)
+		return 2
+
+	taken = branch_names()
+	generator = random.Random(os.environ.get("STACK_NAMES_SEED"))
+	names: list[str] = []
+	for _ in range(args.count):
+		name = draw_name(args.branch, taken, generator)
+		if name is None:
+			print(
+				f"stack-branch-names.py: no new name after {MAX_ATTEMPTS} attempts",
+				file=sys.stderr,
+			)
+			return 1
+		taken.add(name)
+		names.append(name)
+	for name in names:
+		print(name)
+	return 0
+
+
+if __name__ == "__main__":
+	raise SystemExit(main())

@@ -12,10 +12,12 @@ steps {
   ["newlines"] = Hk.newlines
   ["pkl"] = (Hk.pkl) { depends = List("pkl_format") }
   ["pkl_format"] = Hk.pkl_format
-  ["shellcheck"] = (Hk.shellcheck) {
-    match_any = null
-    glob = "**/*.sh"
-  }
+  // hk gives these steps every file that reads as Python, which includes the
+  // scripts that carry a python shebang and no extension. A uv shebang does
+  // not count: hk reads the program that the shebang names, and uv is not
+  // python. So keep the python3 shebang, and call a uv script with uv run.
+  ["ruff"] = Hk.ruff
+  ["ruff_format"] = Hk.ruff_format
   // hk runs every step of a hook in 1 parallel group, so a check can approve a
   // file that a fixer rewrites afterwards. The dependency makes validation read
   // the file that gets committed.

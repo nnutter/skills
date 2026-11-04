@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Run a check command at every commit in a range, each in a scratch worktree."""
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+DEFAULT_COMMAND = "mise run check && mise run test"
+
+
+def build_parser() -> argparse.ArgumentParser:
+	"""Return the command-line parser for this script."""
+	parser = argparse.ArgumentParser(
+		prog="check-history",
+		usage="Usage: check-history [-k|--keep] <base> [<tip>] [-- <command>]",
+		description=(
+			"Run <command> with sh -c at every commit in <base>..<tip> and stop at"
+			" the first commit that fails. Each commit gets a fresh worktree, so a"
+			" build artifact from 1 commit cannot hide a failure in the next one."
+			f" The default command is: {DEFAULT_COMMAND}"
+		),
+		epilog=("Exit status: 0 when every commit passes, 1 when a commit fails, 2 for a usage error."),
+	)
+	parser.add_argument(
+		"-k",
+		"--keep",
+		action="store_true",
+		help="keep the worktree of the failed commit and print its path",
+	)
+	parser.add_argument(
+		"base",
+		help="the range starts above this commit",
+	)
+	parser.add_argument(
+		"tip",
+		nargs="?",
+		default="HEAD",
+		help="the last commit of the range (default: HEAD)",
+	)
+	parser.add_argument(
+		"command",
+		nargs=argparse.REMAINDER,
+		help=f"the check command (default: {DEFAULT_COMMAND})",
+	)
+	return parser
+
+
+def drop_git_environment() -> None:
+	"""Stop a rebase or a hook from redirecting git away from the worktree."""
+	for name in [name for name in os.environ if name.startswith("GIT_")]:
+		del os.environ[name]
+
+
+def git(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+	"""Run git and return its result."""
+	return subprocess.run(
+		("git", *args),
+		capture_output=True,
+		text=True,
+		check=check,
+	)
+
+
+def resolve_commit(revision: str) -> str | None:
+	"""Return the commit that a revision names, or None."""
+	result = git("rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}", check=False)
+	if result.returncode != 0:
+		return None
+	return result.stdout.strip()
+
+
+def commit_subject(commit: str) -> str:
+	"""Return the subject line of a commit."""
+	return git("log", "-1", "--format=%s", commit).stdout.strip()
+
+
+def remove_worktree(tree: Path, scratch: Path, keep: bool) -> None:
+	"""Remove the scratch worktree, or report the path that it kept."""
+	if tree.is_dir():
+		if keep:
+			print(f"kept: {tree}", file=sys.stderr)
+		else:
+			git("worktree", "remove", "--force", str(tree), check=False)
+	if not keep:
+		shutil.rmtree(scratch, ignore_errors=True)
+
+
+def run_commits(tree: Path, commits: list[str], command: str) -> int:
+	"""Run the command at each commit, and return the exit status."""
+	for commit in commits:
+		subject = commit_subject(commit)
+		print(f"\n=== {commit[:12]} {subject}", file=sys.stderr, flush=True)
+		# A check can change files, so reset the worktree and remove ignored
+		# output before the next commit.
+		git("-C", str(tree), "checkout", "--detach", "--quiet", "--force", commit)
+		git("-C", str(tree), "clean", "-xdffq")
+		result = subprocess.run(("sh", "-c", command), cwd=tree, check=False)
+		if result.returncode != 0:
+			print(f"\nFAILED: {commit[:12]} {subject}", file=sys.stderr)
+			return 1
+	return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+	"""Run the check at every commit, and return the exit status."""
+	parser = build_parser()
+	args = parser.parse_args(argv)
+	drop_git_environment()
+
+	base = resolve_commit(args.base)
+	if base is None:
+		print(f"check-history: not a commit: {args.base}", file=sys.stderr)
+		return 2
+	tip = resolve_commit(args.tip)
+	if tip is None:
+		print(f"check-history: not a commit: {args.tip}", file=sys.stderr)
+		return 2
+	commits = git("rev-list", "--reverse", f"{base}..{tip}").stdout.split()
+	if not commits:
+		print(f"check-history: no commits in {base[:12]}..{tip[:12]}", file=sys.stderr)
+		return 2
+
+	command = " ".join(args.command).strip() or DEFAULT_COMMAND
+	scratch = Path(tempfile.mkdtemp())
+	tree = scratch / "tree"
+	status = 1
+	try:
+		git("worktree", "add", "--detach", "--quiet", str(tree), base)
+		status = run_commits(tree, commits, command)
+		if status == 0:
+			print(f"\nOK: {len(commits)} commit(s) passed in {base[:12]}..{tip[:12]}")
+	except subprocess.CalledProcessError as error:
+		print(f"check-history: failed: {' '.join(error.cmd)}", file=sys.stderr)
+	finally:
+		remove_worktree(tree, scratch, args.keep)
+	return status
+
+
+if __name__ == "__main__":
+	raise SystemExit(main())

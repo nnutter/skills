@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Exercise the reference hk entry points in disposable projects.
+
+Requires mise, git, network access, and the tools specified by
+skills/go-template/references/mise.toml.
+"""
+
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+REFERENCES = ROOT / "skills" / "go-template" / "references"
+REFERENCE_FILES = ("go.mod", "mise.toml", "hk.pkl", "mdlint.toml", "LICENSE")
+MODULE_PATH = "example.org/integration"
+GO_VERSION = "1.26.0"
+
+
+def step(title: str) -> None:
+	"""Print the title of the next group of checks."""
+	print(f"\n=== {title} ===", flush=True)
+
+
+def run(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> None:
+	"""Run a command and stop the script when it fails."""
+	subprocess.run(args, cwd=cwd, env=env, check=True)
+
+
+def drop_git_environment() -> None:
+	"""Stop a rebase or a hook from redirecting git away from the fixture."""
+	for name in [name for name in os.environ if name.startswith("GIT_")]:
+		del os.environ[name]
+
+
+def prepare_project(project: Path) -> None:
+	"""Copy the reference files and commit 1 clean baseline."""
+	for name in REFERENCE_FILES:
+		shutil.copy2(REFERENCES / name, project / name)
+	module = project / "go.mod"
+	module.write_text(module.read_text().replace("MODULE_PATH", MODULE_PATH).replace("GO_VERSION", GO_VERSION))
+	run("git", "init", "-q", cwd=project)
+	run("git", "config", "user.name", "Integration Test", cwd=project)
+	run("git", "config", "user.email", "integration@example.invalid", cwd=project)
+	run("mise", "install", cwd=project)
+
+	step("prepare a complete Go module and clean baseline")
+	(project / "main.go").write_text("package main\n\nfunc main() {}\n")
+	(project / "main_test.go").write_text('package main\n\nimport "testing"\n\nfunc TestExample(t *testing.T) {}\n')
+	(project / "README.md").write_text("# Demo\n")
+	run("mise", "exec", "--", "go", "mod", "tidy", cwd=project)
+	run("mise", "exec", "--", "hk", "validate", cwd=project)
+	run("mise", "exec", "--", "hk", "fix", "hk.pkl", "mise.toml", "mdlint.toml", "README.md", cwd=project)
+	run("git", "add", ".", cwd=project)
+	run("git", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "Baseline", cwd=project)
+
+
+def verify() -> None:
+	"""Run every check against a disposable project."""
+	drop_git_environment()
+	os.environ["GOSUMDB"] = "off"
+	with tempfile.TemporaryDirectory() as name:
+		project = Path(name)
+		os.environ["MISE_TRUSTED_CONFIG_PATHS"] = str(project)
+		prepare_project(project)
+
+		step("behavioral hk integration tests")
+		run(
+			"python3",
+			"-B",
+			str(ROOT / "skill-tests" / "test_references.py"),
+			"-v",
+			cwd=project,
+			env=dict(os.environ, GO_TEMPLATE_TEST_PROJECT=str(project)),
+		)
+
+		step("test and coverage tasks")
+		for task in ("test", "ci-test", "coverage"):
+			run("mise", "run", task, cwd=project)
+		# Coverage output is not source input for the aggregate checks.
+		(project / "coverage.out").unlink(missing_ok=True)
+
+		step("aggregate and agent-hook tasks")
+		for task in ("check", "all", "on-start", "on-stop"):
+			run("mise", "run", task, cwd=project)
+
+
+def main() -> int:
+	"""Run the checks, and return the exit status."""
+	try:
+		verify()
+	except subprocess.CalledProcessError as error:
+		print(f"verify-tasks: failed: {' '.join(error.cmd)}", file=sys.stderr)
+		return error.returncode
+	print("\nALL ENTRY POINTS OK")
+	return 0
+
+
+if __name__ == "__main__":
+	raise SystemExit(main())

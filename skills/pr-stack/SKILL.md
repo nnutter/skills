@@ -30,6 +30,7 @@ Do not rewrite history to work around a missing requirement.
   `gh stack --help` MUST succeed.
   When it does not, stop and report it.
   Do not build the stack by hand with `gh pr create`.
+- `python3`, which `scripts/stack-branch-names` needs.
 - No review session in progress.
   `timber review status --is-reviewing --json` reports 1.
 
@@ -123,6 +124,19 @@ Order the groups so that each 1 depends only on the groups before it.
 
 Report a table with these columns: group, current commits, final commits, branch name, pull request title, base branch.
 
+Name the branches before you report the plan.
+The top group keeps the name of the original branch.
+Each group below the top takes that name and 2 random words, such as `foo-raptor-tunnel`:
+
+```sh
+branch=$(git rev-parse --abbrev-ref HEAD)
+mapfile -t lower < <(scripts/stack-branch-names "$branch" <groups-below-the-top>)
+```
+
+`lower[0]` is the name of the bottom group, and the last name is the group below the top.
+A name holds no position number and no commit, so a later change to the groups keeps the name of a group that stays.
+Put the names in the table, and keep them for step 7.
+
 Also report:
 
 - each commit to squash and the commit that receives it;
@@ -160,7 +174,7 @@ This command MUST print nothing.
 Run the repository checks at every commit, not only at the tip:
 
 ```sh
-scripts/check-history.sh "$base" HEAD -- 'mise run check && mise run test'
+scripts/check-history "$base" HEAD -- 'mise run check && mise run test'
 ```
 
 The script gives each commit a fresh worktree, runs the command, stops at the first failure, and removes the worktree.
@@ -183,24 +197,42 @@ A later repair leaves a commit in the history that does not pass its own checks.
 Create 1 branch for each group, in order from the bottom of the stack.
 The branch of a group points at the last commit of that group.
 
+The top group keeps the name of the original branch.
+Each group below the top takes that name and 2 random words.
+The names come from `scripts/stack-branch-names` in step 4, so this step does not draw new names.
+`lower[0]` is the bottom branch and `lower[1]` is the branch below the top.
+Use the names that step 4 reported.
+
+| Group | Branch | Points at |
+| --- | --- | --- |
+| 3, the top | `foo` | the final commit |
+| 2 | `lower[1]`, such as `foo-laser-beam` | the last commit of group 2 |
+| 1, the bottom | `lower[0]`, such as `foo-tunnel-pit` | the last commit of group 1 |
+
+Create the branches from the bottom:
+
 ```sh
-git branch --no-track "<feature>/1-<slug>" "<commit-1>"
-git branch --no-track "<feature>/2-<slug>" "<commit-2>"
+git branch --no-track "${lower[0]}" "<commit-1>"
+git branch --no-track "${lower[1]}" "<commit-2>"
 ```
 
-Use 2 to 4 words of the pull request title as the `<slug>`, in lower case and separated by `-`.
 `--no-track` stops a stack branch from taking the base branch as its upstream before the stack tool sets the upstream.
+
+Apart from the top branch, a branch name MUST be new.
+The script never repeats a name, so the top branch is the only branch of the stack that can already exist.
+Report that branch when it holds work that you did not review.
 
 Register the branches as 1 stack, from bottom to top:
 
 ```sh
-gh stack init --base "<base-branch>" "<feature>/1-<slug>" "<feature>/2-<slug>"
+gh stack init --base "<base-branch>" "${lower[@]}" "$branch"
 ```
 
 `gh stack init` adopts the existing branches.
 The first branch is based on the base branch, and each later branch is based on the branch below it.
-Keep the local feature branch at the final commit.
-The feature branch is not part of the stack, so do not push it.
+The top branch is the original feature branch, and the stack pushes it with the other branches, so a rewrite of it needs `--force-with-lease`.
+
+Do not rename a branch of the stack after step 8, because its pull request refers to the name.
 
 ## 8. Submit the stack
 
@@ -217,8 +249,10 @@ gh stack submit --auto --open
 Then set the title of each pull request, and leave the body empty:
 
 ```sh
-gh pr edit "<feature>/1-<slug>" --title "<title>" --body ""
+gh pr edit "${lower[0]}" --title "<title>" --body ""
 ```
+
+Repeat it for each branch of the stack, with the title of its pull request.
 
 The title becomes 1 release note line, so write it for the user:
 
@@ -262,10 +296,11 @@ gh stack merge
 - Rewrite history, push, and open pull requests only after the user approves the plan.
   `gh stack submit` pushes the branches and opens the pull requests, so it needs that approval too.
 - Use `--force-with-lease`.
-  Do not force-push a branch that you did not create, and do not force-push the base branch at any time.
+  Push only the branches of the stack: the top branch and the names from `scripts/stack-branch-names`.
+  Do not force-push any other branch, and do not force-push the base branch at any time.
 - Do not commit an empty change.
 - Do not leave a trial-and-error commit, a mixed refactor and feature commit, or a commit that fails the checks.
-- When a remote branch of the same name exists, fetch it and compare it first.
+- When the remote already has the top branch, fetch it and compare it first.
   Report any commit that you did not review.
 
 ## Verification
@@ -276,8 +311,10 @@ Check the result before you report it:
 - `git log --oneline "$base"..HEAD` shows only the planned commits, and each refactoring subject carries the `Refactor:` prefix.
 - No commit contains both a refactoring and a feature or fix.
 - Each commit message holds at most 1 `Change-Id:` trailer.
-- Each stack branch points at the last commit of its group, and the local feature branch points at the final commit.
-- `scripts/check-history.sh` reports `OK` for the whole range.
+- Each stack branch points at the last commit of its group.
+  The top branch is the original branch name, and it points at the final commit.
+- Each branch below the top is the original branch name and 2 words from `scripts/stack-branch-names`.
+- `scripts/check-history` reports `OK` for the whole range.
 - `gh stack view --short` lists the branches in the planned order.
 - Each pull request shows the planned base branch: `gh pr view <number> --json baseRefName`.
 - Each pull request title reads as 1 release-note line, and its body is empty: `gh pr view <number> --json title,body`.

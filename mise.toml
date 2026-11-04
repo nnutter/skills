@@ -19,7 +19,7 @@ uv = "latest"
 "github:nnutter/mdlint" = "latest"
 pkl = "latest"
 "pypi:agentskills-tools" = "latest"
-shellcheck = "latest"
+ruff = "latest"
 tombi = "latest"
 yamlfmt = "latest"
 
@@ -37,7 +37,7 @@ run = "python3 -B -m unittest discover -s skill-tests -v"
 
 [tasks.test-integration]
 description = "Exercise the reference tasks in a disposable Go repository"
-run = "bash skill-tests/verify-tasks.sh"
+run = "skill-tests/verify-tasks"
 
 [tasks.fix]
 description = "Fix all files, or only the supplied files"

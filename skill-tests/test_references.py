@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Reference links and opt-in behavioral checks against installed hk tools.
 
-Run verify-tasks.sh to install tools and enable the integration cases.
+Run verify-tasks to install tools and enable the integration cases.
 """
 
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILL_DIR = ROOT / "skills" / "go-template"
@@ -71,14 +71,13 @@ class SkillReferenceTest(unittest.TestCase):
 		self.assertIn("hk fix", fix)
 
 
-@unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks.sh for hk integration tests")
+@unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks for hk integration tests")
 class HkEntryPointTest(unittest.TestCase):
 	def setUp(self) -> None:
 		self.tmp = tempfile.TemporaryDirectory()
 		self.addCleanup(self.tmp.cleanup)
 		self.project = Path(self.tmp.name)
-		shutil.copytree(FIXTURE, self.project, dirs_exist_ok=True,
-		                ignore=shutil.ignore_patterns(".git"))
+		shutil.copytree(FIXTURE, self.project, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".git"))
 		self.env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
 		self.env.update(MISE_TRUSTED_CONFIG_PATHS=str(self.project), HK_MISE="1")
 		self.run_command("git", "init", "-q")
@@ -88,8 +87,15 @@ class HkEntryPointTest(unittest.TestCase):
 		self.run_command("git", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "Baseline")
 
 	def run_command(self, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-		result = subprocess.run(args, cwd=self.project, env=self.env, text=True,
-		                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=600)
+		result = subprocess.run(
+			args,
+			cwd=self.project,
+			env=self.env,
+			text=True,
+			stdout=subprocess.PIPE,
+			stderr=subprocess.STDOUT,
+			timeout=600,
+		)
 		if check:
 			self.assertEqual(result.returncode, 0, f"{args!r}\n{result.stdout}")
 		return result
@@ -98,9 +104,11 @@ class HkEntryPointTest(unittest.TestCase):
 		return self.run_command("mise", "exec", "--", "hk", *args, check=check)
 
 	def snapshot(self) -> dict[str, bytes]:
-		return {str(path.relative_to(self.project)): path.read_bytes()
-		        for path in self.project.rglob("*")
-		        if path.is_file() and ".git" not in path.relative_to(self.project).parts}
+		return {
+			str(path.relative_to(self.project)): path.read_bytes()
+			for path in self.project.rglob("*")
+			if path.is_file() and ".git" not in path.relative_to(self.project).parts
+		}
 
 	def write_dirty_formats(self) -> dict[str, str]:
 		files = {
@@ -145,7 +153,9 @@ class HkEntryPointTest(unittest.TestCase):
 	def test_scoped_fix_runs_the_module_wide_go_fix(self) -> None:
 		(self.project / "sub").mkdir()
 		for name, package in (("modern.go", "main"), ("sub/modern.go", "sub")):
-			(self.project / name).write_text(f"package {package}\n\nfunc Modern() any {{ var value interface{{}}; return value }}\n")
+			(self.project / name).write_text(
+				f"package {package}\n\nfunc Modern() any {{ var value interface{{}}; return value }}\n"
+			)
 		self.run_command("git", "add", "modern.go", "sub/modern.go")
 		# hk's go_fix step runs at the module workspace, so 1 selected file gives
 		# go fix the whole module. The skill documents this effect, so the test
@@ -199,8 +209,9 @@ class HkEntryPointTest(unittest.TestCase):
 		self.assertEqual((self.project / "unstaged.md").read_text(), "#  Untouched\n")
 		self.assertEqual(self.run_command("git", "show", ":unstaged.md").stdout, "# Unstaged\n")
 		self.assertEqual((self.project / "untracked.md").read_text(), "#  Untracked\n")
-		self.assertEqual(set(self.run_command("git", "diff", "--cached", "--name-only").stdout.splitlines()),
-		                 {"staged.md", *formats})
+		self.assertEqual(
+			set(self.run_command("git", "diff", "--cached", "--name-only").stdout.splitlines()), {"staged.md", *formats}
+		)
 
 	def test_full_fix_repairs_unused_imports_before_analysis(self) -> None:
 		path = self.project / "imports.go"
