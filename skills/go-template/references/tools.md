@@ -1,68 +1,85 @@
 # Recommended tools
 
-Each row names the `hk` step and the tool that the step runs.
-Take the step from `nnutter/hk-config` when it has one, then from hk's own builtins, and add a custom step only when neither fits.
+Each row names the `hk` step, the group that supplies it, and the tool that the step runs.
+`Hooks.all` in `nnutter/hk-config` adds the steps of every group it is given and orders them, so a project config names groups and no steps.
+Take a step from a group first, then from hk's own builtins, and add a custom step only when neither fits.
+When more than 1 repository needs the same custom step, add it to `hk-config` instead.
 Install the tool with `mise`; the step only supplies the command, the file patterns, and the fix command.
 
-Install from a published release when one covers macOS and Linux on arm64 and amd64, such as `github:nnutter/constable`.
-The `go:` backend compiles the tool on every machine and every CI run, so use it only for a tool that publishes no release for both platforms.
+Install a tool from its published release with the `github:` backend when that release covers Linux and macOS on both amd64 and arm64, because the `go:` backend compiles the tool on every machine and every CI run.
+`github:nnutter/constable` is such a tool, and a new tool SHOULD join it.
+
+A Go analyzer reads the build artifacts of the toolchain that compiles the module, so its binary must be built with a Go at least as new as the repository's.
+`gohawk` v0.7.2 was built with Go 1.27.0 and panics on a module that Go 1.27.3 compiles, and `testifylint` v0.0.1 was built with Go 1.26 and cannot analyze such a module.
+These tools therefore keep the `go:` backend: `gohawk`, `testifylint`, and `errcheck`, `nilaway`, `goimports`, and `govulncheck`, which publish no release for both platforms.
+
+`default` is a step that every hook runs, so no group adds it.
+Add the group of each language and format that the repository contains.
 
 ## Go
 
-| Step | Source | Tool | Notes |
+| Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `go_imports` | hk-config | `goimports` | Groups this module's own packages as a separate import group. |
-| `go_fumpt` | hk | `gofumpt` | Runs before the steps that need formatted code. |
-| `go_fix` | hk | `go fix` | Needs Go 1.26 or later. |
-| `gomod_tidy` | hk | `go mod tidy` | Runs in the module workspace and stages `go.mod` and `go.sum`. |
-| `go_vet` | hk | `go vet` |  |
-| `staticcheck` | hk | `staticcheck` |  |
-| `errcheck` | hk | `errcheck` |  |
-| `go_sec` | hk-config | `gosec` | High-severity findings only. |
-| `go_vuln_check` | hk | `govulncheck` |  |
-| `nilaway` | hk-config | `nilaway` | Checks this module's packages only. |
-| `constable` | hk-config | `constable` | Non-mutating contracts, complexity, and predicates. |
-| `go_check_sumtype` | hk-config | `go-check-sumtype` | Requires an exhaustive switch over a sum type. |
-| `testifylint` | hk-config | `testifylint` | Install `github.com/nnutter/testifylint` with the `go:` backend; the 1.6 release cannot load packages from a current Go toolchain and it publishes no binary release. |
-| `gohawk` | hk-config | `gohawk` | Optional: resource lifetime and concurrency bugs. |
-| `golangci_lint` | hk | `golangci-lint` | Use when 1 run must cover many analyzers. |
+| `go_imports` | go | `goimports` | Groups this module's own packages as a separate import group. |
+| `go_fumpt` | go | `gofumpt` | Runs before the steps that need formatted code. |
+| `go_fix` | go | `go fix` | Needs Go 1.26 or later. |
+| `testifylint` | go | `testifylint` |  |
+| `constable` | go | `constable` | Contracts, method order, complexity, and predicates. |
+| `gomod_tidy` | go | `go mod tidy` | Runs in the module workspace and stages `go.mod` and `go.sum`. |
+| `go_vet` | go | `go vet` |  |
+| `staticcheck` | go | `staticcheck` |  |
+| `go_vuln_check` | go | `govulncheck` |  |
+| `err_check` | go | `errcheck` |  |
+| `go_check_sumtype` | go | `go-check-sumtype` | Requires an exhaustive switch over a sum type. |
+| `nilaway` | go | `nilaway` | Checks this module's packages only. |
+| `go_sec` | go | `gosec` | High-severity findings only. |
+| `gohawk` | go | `gohawk` | Resource lifetime and concurrency bugs. |
+| `golangci_lint` | none | `golangci-lint` | Custom step. Use when 1 run must cover many analyzers. |
 
 ## Markdown, YAML, TOML, Pkl, and shell
 
-| Step | Source | Tool | Notes |
+| Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `mdlint` | hk-config | `mdlint` | Install `github:nnutter/mdlint`. |
-| `skills_ref` | hk-config | `agentskills` | Use only when the repository contains skills. Validates the front matter of each `SKILL.md` and needs `pypi:agentskills-tools`. |
-| `yamlfmt` | hk | `yamlfmt` | Formats YAML, including workflows. |
-| `tombi_format`, `tombi` | hk | `tombi` | Formats, then lints, TOML. |
-| `pkl_format`, `pkl` | hk | `pkl` | Formats, then evaluates, Pkl. |
-| `shellcheck` | hk | `shellcheck` | Give it `glob = "**/*.sh"` and `match_any = null`. |
-| `shfmt` | hk | `shfmt` | Optional: shell formatting. |
+| `mdlint` | default | `mdlint` | Install `github:nnutter/mdlint`. |
+| `yamlfmt` | yaml | `yamlfmt` | Formats YAML, including workflows. |
+| `tombi_format`, `tombi` | toml | `tombi` | Formats, then lints, TOML. |
+| `pkl_format`, `pkl` | default | `pkl` | Formats, then evaluates, Pkl. |
+| `shellcheck` | shell | `shellcheck` |  |
+| `shfmt` | shell | `shfmt` | Formats shell. |
+| `skills_ref` | agentskills | `agentskills` | Validates the front matter of each `SKILL.md` and needs `pypi:agentskills-tools`. |
 
 ## Python
 
-| Step | Source | Tool | Notes |
+| Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `ruff_format`, `ruff` | hk | `ruff` | Formats, then lints. |
-| `ty` | hk | `ty` | Type checks. |
+| `ruff_format`, `ruff` | python | `ruff` | Formats, then lints. |
+| `ty` | python | `ty` | Type checks. |
 
 Install the project environment with `uv`, and run the tests through it.
 
+`conda:git` exports `CONDA_PREFIX` to every child process, and a Python tool then looks for `site-packages` inside the Git package, which fails the step.
+A repository that installs Git with `conda:git` and also runs Python tools MUST remove the variable in `[env]`, unless it has a conda environment:
+
+```toml
+[env]
+CONDA_PREFIX = false
+```
+
 ## GitHub Actions
 
-| Step | Source | Tool | Notes |
+| Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `jactionlint` | hk | `jactionlint` | Lints workflows. |
-| `actionlint` | hk | `actionlint` | Alternative to `jactionlint`. |
+| `jactionlint` | default | `jactionlint` | A maintained `actionlint` fork. It also reads composite actions and Dependabot configuration, and it rewrites a workflow in the hooks that fix. The step skips a repository that has no workflow. |
 
 ## Every file
 
-| Step | Source | Tool | Notes |
+| Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `gitleaks` | hk | `gitleaks` | The `pre-commit` hook needs the staged scan that also reads binary bytes. |
-| `newlines` | hk | `hk util end-of-file-fixer` |  |
-| `trailing_whitespace` | hk | `hk util trailing-whitespace` |  |
-| `typos` | hk | `typos` | Optional: spelling. |
+| `gitleaks` | default | `gitleaks` | The `pre-commit` hook scans the staged content, and every other hook scans the worktree. |
+| `mise` | default | `mise` | Checks the format of the `mise` configuration. |
+| `newlines` | default | `hk util end-of-file-fixer` |  |
+| `trailing_whitespace` | default | `hk util trailing-whitespace` |  |
+| `typos` | none | `typos` | Custom step. Spelling. |
 
 ## Other languages and formats
 
@@ -71,8 +88,8 @@ Use these only when the repository already uses the language or format.
 | Language or format | Steps |
 | --- | --- |
 | Dockerfile | `hadolint` |
-| JavaScript, TypeScript | `biome`, `prettier`, `eslint`, `tsc` |
+| JavaScript, TypeScript | `oxfmt` and `ox_lint` in `ts-backend` or `ts-frontend`, `tsc` in `ts-backend`, `oxfmt` in `json` |
 | Kotlin, Java | `ktlint`, `google_java_format` |
 | Ruby | `rubocop` |
-| Rust | `rustfmt`, `cargo_check`, `cargo_clippy`, `cargo_deny` |
+| Rust | `cargo_fmt`, `cargo_check`, and `cargo_clippy` in `rust`, `cargo_deny` |
 | Terraform, OpenTofu | `terraform_validate`, `tf_lint`, `tofu_validate` |

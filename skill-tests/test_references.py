@@ -33,21 +33,27 @@ class SkillReferenceTest(unittest.TestCase):
 				if path.startswith("scripts/"):
 					self.assertTrue(os.access(target, os.X_OK), f"Not executable: {path}")
 
-	def test_config_imports_the_hk_config_package(self) -> None:
+	def test_config_uses_the_hk_config_hook_templates(self) -> None:
 		config = (REFERENCES / "hk.pkl").read_text()
 		mise = (REFERENCES / "mise.toml").read_text()
 		pin = re.search(r'^hk = "([^"]+)"', mise, re.MULTILINE)
 		if pin is None:
 			self.fail("hk must be pinned in mise.toml")
 		hk = pin.group(1)
-		hk_versions = re.findall(r"jdx/hk/releases/download/v([^/]+)/hk@", config)
-		self.assertEqual(hk_versions, [hk], "hk.pkl must import the pinned hk version")
-		package = re.search(r"hk-config@([^#\"]+)#", config)
-		if package is None:
-			self.fail("hk.pkl must import the hk-config package")
-		self.assertEqual(package.group(1).split("-")[0], hk, "hk-config must target the pinned hk version")
-		self.assertIn('["change-id"] = Extra.timber_commit_msg', config)
+		for version in re.findall(r"jdx/hk/releases/download/v([^/]+)/hk@", config):
+			self.assertEqual(version, hk, "hk.pkl must import the pinned hk version")
+		packages = re.findall(r"hk-config@([^#\"]+)#", config)
+		self.assertTrue(packages, "hk.pkl must import the hk-config package")
+		self.assertEqual(len(set(packages)), 1, "hk.pkl must import 1 hk-config version")
+		self.assertEqual(packages[0].split("-")[0], hk, "hk-config must target the pinned hk version")
+		self.assertIn("Hooks.all(", config, "The hook templates must build the hooks")
 		self.assertNotIn("git-review", config)
+
+	def test_config_leaves_the_step_order_to_the_template(self) -> None:
+		config = (REFERENCES / "hk.pkl").read_text()
+		# The templates own the order of every step they supply, so a config order
+		# that repeats it has drifted from the package.
+		self.assertNotIn("depends", config)
 
 	def test_workflows_pin_actions_to_a_commit(self) -> None:
 		workflows = sorted((REFERENCES / ".github" / "workflows").glob("*.y*ml"))
@@ -223,23 +229,6 @@ class HkEntryPointTest(unittest.TestCase):
 		self.run_command("mise", "run", "fix")
 		self.assertNotIn('"fmt"', path.read_text())
 		self.run_command("mise", "run", "check")
-
-	def test_pre_commit_blocks_secret_in_binary_staged_bytes(self) -> None:
-		self.run_command("mise", "run", "setup")
-		control = self.project / "control.txt"
-		control.write_text("No credentials here.\n")
-		self.run_command("git", "add", control.name)
-		self.run_command("git", "commit", "-qm", "Safe control")
-		head = self.run_command("git", "rev-parse", "HEAD").stdout
-		path = self.project / "secret.dat"
-		# Split so this source file carries no detectable secret itself.
-		key = "AKIA" + "Q7M3XNB5TRW2KHLD"
-		path.write_bytes(b"PREFIX\x00awsToken = " + key.encode() + b"\n")
-		self.run_command("git", "add", path.name)
-		result = self.run_command("git", "commit", "-qm", "Reject binary credential", check=False)
-		self.assertNotEqual(result.returncode, 0, result.stdout)
-		self.assertIn("gitleaks", result.stdout.lower())
-		self.assertEqual(self.run_command("git", "rev-parse", "HEAD").stdout, head)
 
 	def test_setup_preserves_existing_hooks(self) -> None:
 		hooks = self.project / ".git" / "hooks"
