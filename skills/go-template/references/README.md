@@ -9,12 +9,14 @@ Replace these placeholders before you use the files:
 - `COPYRIGHT_YEAR`: the copyright year.
 - `COPYRIGHT_HOLDER`: the copyright holder.
 
-`hk.pkl` imports 2 packages: hk's own builtins and the extra builtins from `nnutter/hk-config`.
-The hk version in both imports must equal the `hk` pin in `mise.toml`, and the `hk-config` version is that hk version plus a revision.
+`hk.pkl` amends the `Config.pkl` of `nnutter/hk-config` and imports its `Hooks.pkl`, so hk's own builtins arrive through that package.
+The hk-config version is the `hk` pin in `mise.toml` plus the highest revision released for it, and both package paths name that version.
+`Hooks.all(List(...))` builds the check, fix, pre-commit, and commit-msg hooks from the groups that it names, and the template owns the step order: the fixers run in sequence, every reader waits for the last fixer, and the check hook runs every step at once.
+Name the groups the project needs instead of listing steps.
 Every other tool takes the latest release, and `mise.lock` is tracked so that a `latest` pin resolves to the same release on every machine.
 Track `.mise/locks/` with it and ignore the rest of `.mise/`: a lock entry for a Python tool points at a sidecar directory there, and a checkout without it cannot install the tool.
 Install `uv` when a Python tool is in the list; the pypi backend needs it to build the lock.
-`references/tools.md` lists the recommended tool for each language and format.
+`references/tools.md` lists the recommended tool for each language and format, and the group that supplies its step.
 
 Copy `.github/workflows/release.yaml` when the repository is a Go application; a library does not publish binaries and does not need it.
 Replace `BINARY_PLACEHOLDER` with the binary name and `MAIN_PACKAGE_PLACEHOLDER` with the package to build, such as `.` or `./cmd/name`.
@@ -29,7 +31,8 @@ Keep GitHub Actions expressions such as `${{ github.ref }}` and hk placeholders 
 Every action is pinned to a commit SHA with its release tag in a comment; pin the latest tag that is at least 24 hours old and confirm it in the action's repository.
 Run `scripts/pin-action OWNER/REPO` for the tag and SHA, and confirm the result in the action's repository.
 Run `mise upgrade` to install the tools at the versions the pins name, run `mise lock` to record them, and run `go mod tidy` to resolve the project's Go dependencies.
-Use `mise run check` for non-writing checks and `mise run fix` to apply fixes.
+Use `mise run fix` for the local run: by the definition in `hk-config` it is a superset of `mise run check`, because it runs the same steps and applies every fix that they offer.
+Read its output for the problems that no fix can change, and use `mise run check` for the read-only run in CI.
 A fix can change files across a Go module, because hk's `go fix` and `go mod tidy` steps run at the module workspace; inspect the changes before committing.
 Before running `mise run setup`, follow the Git hook migration procedure in `SKILL.md`.
 Inspect existing hooks and managers, preserve nonduplicate behavior, and obtain approval before removing or replacing them.
