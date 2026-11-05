@@ -1,10 +1,17 @@
 [settings]
 minimum_release_age = "0"
 
+[env]
+# conda:git exports CONDA_PREFIX to every child process, and a Python tool then
+# looks for site-packages inside the Git package. This repository has no conda
+# environment, so remove the variable.
+CONDA_PREFIX = false
+
 [tools]
 # hk is the only pinned tool: hk.pkl imports this exact version, and the
 # hk-config package version carries it too.
 hk = "2.11.1"
+jactionlint = "latest"
 # Git 2.54 and later lets hk install config-based hooks, so hooks do not need
 # files in .git/hooks. A system Git below 2.54 falls back to script shims.
 "conda:git" = "latest"
@@ -21,6 +28,7 @@ pkl = "latest"
 "pypi:agentskills-tools" = "latest"
 ruff = "latest"
 tombi = "latest"
+ty = "latest"
 yamlfmt = "latest"
 
 [tasks.all]
@@ -61,8 +69,4 @@ run = [{ task = "all" }]
 [tasks.on-stop]
 description = "Fix edited files, then test and check"
 usage = 'arg "[staged_files]" var=#true'
-run = [
-  "mise run fix ${usage_staged_files}",
-  "mise run test",
-  "mise run check",
-]
+run = ["mise run fix ${usage_staged_files}", "mise run test", "mise run check"]

@@ -1,38 +1,17 @@
+// hk's own builtins and the hook templates from nnutter/hk-config. The hk
+// version in both package paths must equal the hk pin in mise.toml, and the
+// hk-config revision is the newest one released for that hk version.
 amends
-  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-0/hk-config@2.11.1-0#/Config.pkl"
+  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-2/hk-config@2.11.1-2#/Config.pkl"
 
-import "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Builtins.pkl" as Hk
 import
-  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-0/hk-config@2.11.1-0#/Builtins.pkl"
-  as Extra
+  "package://github.com/nnutter/hk-config/releases/download/v2.11.1-2/hk-config@2.11.1-2#/Hooks.pkl"
+  as Hooks
 
-steps {
-  ["gitleaks"] = Hk.gitleaks
-  ["mdlint"] = Extra.mdlint
-  ["newlines"] = Hk.newlines
-  ["pkl"] = (Hk.pkl) { depends = List("pkl_format") }
-  ["pkl_format"] = Hk.pkl_format
-  // hk gives these steps every file that reads as Python, which includes the
-  // scripts that carry a python shebang and no extension. A uv shebang does
-  // not count: hk reads the program that the shebang names, and uv is not
-  // python. So keep the python3 shebang, and call a uv script with uv run.
-  ["ruff"] = Hk.ruff
-  ["ruff_format"] = Hk.ruff_format
-  // hk runs every step of a hook in 1 parallel group, so a check can approve a
-  // file that a fixer rewrites afterwards. The dependency makes validation read
-  // the file that gets committed.
-  ["skills_ref"] = (Extra.skills_ref) { depends = List("mdlint") }
-  ["tombi"] = (Hk.tombi) { depends = List("tombi_format") }
-  ["tombi_format"] = Hk.tombi_format
-  ["trailing_whitespace"] = Hk.trailing_whitespace
-  ["yamlfmt"] = Hk.yamlfmt
-}
-
-hooks {
-  ["commit-msg"] {
-    fix = true
-    steps {
-      ["change-id"] = Extra.timber_commit_msg
-    }
-  }
-}
+// The templates build the check, fix, pre-commit, and commit-msg hooks, and
+// they order the steps of each hook that fixes: the steps that rewrite files
+// run in the order their edits must land, and every step that only reads waits
+// for the last fixer, so the readers run together. `check` sets no order.
+// `python` covers the tests and the scripts, `toml` and `yaml` the tool and
+// workflow files, and `agentskills` the skills in this repository.
+hooks = Hooks.all(List("python", "toml", "yaml", "agentskills"))
