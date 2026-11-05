@@ -39,10 +39,12 @@ Every development tool MUST use `latest`, except `hk`.
 A repository whose own code is Python MAY pin `python` and `uv`, because the supported range belongs to that code.
 When Python only runs repository scripts, `python` MUST use `latest`.
 `hk` MUST be pinned, because `hk.pkl` imports an exact hk release and the step types of 2 releases do not match.
-The version in both `hk.pkl` imports MUST equal the `hk` pin in `mise.toml`:
+The `hk-config` package that `hk.pkl` amends MUST target the `hk` pin in `mise.toml`:
 
-- the hk package release, such as `v2.10.0/hk@2.10.0`;
-- the `hk-config` package release, whose version is `<hk-version>-<revision>`, such as `v2.10.0-4/hk-config@2.10.0-4`.
+- its version is `<hk-version>-<revision>`, such as `v2.11.1-2/hk-config@2.11.1-2`, and `<hk-version>` MUST equal the pin;
+- a config that also imports hk's own builtins MUST import `v<hk-version>/hk@<hk-version>`, such as `v2.11.1/hk@2.11.1`.
+
+The agent MUST take the highest revision that is released for the pinned hk version, because each revision adds builtins and hook templates for that release.
 
 The agent MUST run `mise upgrade` after it writes the pins.
 The agent MUST track `mise.lock`, which records the release that each `latest` pin resolved to, so a run has the same versions on every machine and in CI.
@@ -56,22 +58,39 @@ A bare `hk` command runs whatever tools the shell resolves, which is not necessa
 ## Required baseline
 
 The agent MUST configure `mise` to install the required tools and `hk` to run formatters and linters.
-Install each tool from a published release when one covers macOS and Linux on arm64 and amd64, such as a `github:` backend, instead of compiling it from source on every machine.
-When the repository contains skills, the agent MUST configure the `skills_ref` step, which is an `hk` built-in, and MUST install its `agentskills` command from `pypi:agentskills-tools`.
+The agent MUST install a tool from its published release with the `github:` backend when that release covers Linux and macOS on both amd64 and arm64, because the `go:` backend compiles the tool on every machine and every CI run.
+`github:nnutter/constable` is such a tool.
+A released binary is built with one Go toolchain and reads the build artifacts of that toolchain, so the agent MUST run the binary of a Go analyzer before it prefers the binary over the compile: gohawk v0.7.2 was built with Go 1.27.0, so it panics on a module that Go 1.27.3 compiles.
+The agent MUST keep the `go:` backend for a tool whose binary cannot read the code, and MUST record the reason in `mise.toml`.
+When the repository contains skills, the agent MUST name the `agentskills` group, which supplies the `skills_ref` step, and MUST install its `agentskills` command from `pypi:agentskills-tools`.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
 `hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
 `hk` installs config-based Git hooks on Git 2.54 or later and writes script shims on an older Git.
 Both work, but the Git version then picks the mechanism on each machine.
 When a repository needs the same mechanism everywhere, the agent SHOULD install Git through `mise` with `conda:git`, a prebuilt package of about 260 MB that every repository on the machine shares.
-The `commit-msg` hook MUST run `timber review commit-msg` through the `timber_commit_msg` built-in in `references/hk.pkl`.
+The `commit-msg` hook MUST run `timber review commit-msg`, which `Hooks.all` supplies as its `change-id` step.
 That hook supersedes the `git-review commit-msg` hook, and every `github.com/nnutter` repository uses it.
 Use `references/mise.toml` and `references/hk.pkl` as the configuration references.
+`references/hk.pkl` builds every hook with `Hooks.all` from `hk-config`, and that template owns the step order:
+
+- in a hook that fixes, the steps that rewrite files run in the order their edits must land;
+- every step that only reads waits for the last fixer and for no other reader, so the readers run together;
+- the check hook sets no order, so every step runs at once.
+
+The agent MUST pass the groups that the repository needs, and MUST NOT list the steps of a group itself.
+Use `go` for Go; `toml`, `yaml`, `json`, `shell`, `python`, `rust`, and `buf` for their languages and formats; `ts-backend` and `ts-frontend` for TypeScript; and `agentskills` for skill front matter.
+The agent MUST NOT write `depends` for a step that the template supplies.
+A step that the agent replaces or adds is its own step, so the agent MUST set that step's `depends` to keep its place in the order.
+
+The agent MUST treat the fix hook as a superset of the check hook.
+By the definition in `hk-config`, `hk fix` runs every step that `hk check` runs and also applies the fix that each step offers, so a local run starts with `mise run fix`.
+`mise run check` reports what no fix can change, and it is the read-only run for CI.
 
 The `mise` tasks MUST use the `fix`, `check`, and `test` names.
 The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only place that names a tool, a command, or a file pattern.
 
 - Configure the recommended tool for each language and format in `references/tools.md`.
-- Configure the Go steps, the format steps, the secret scan, and the whitespace steps from the same reference.
+- Configure the hooks from `Hooks.all` in the same reference, with the groups that the repository needs.
 - Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `gitleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
   Preserve its least-privilege permissions.
@@ -87,7 +106,7 @@ A custom step MUST carry a comment that states why no built-in fits.
 If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.
 
 The agent MUST preserve tests, coverage, setup, and the `on-start` and `on-stop` hooks.
-The pre-commit hook MUST scan staged content for secrets regardless of file type.
+The pre-commit hook MUST scan the staged content for secrets.
 For an existing repository, adapt commands to its structure without removing these capabilities.
 hk's `go_fix` and `gomod_tidy` steps run at the module workspace, so a fix of 1 Go file can rewrite other files in that module.
 The `pre-commit` hook therefore stashes unstaged changes.
@@ -132,6 +151,7 @@ The agent MUST NOT remove an existing publishing workflow without approval.
 ## Verification
 
 For a repository with Go packages, run `mise upgrade`, `mise run setup`, `mise run fix`, `mise run test`, `mise run check`, and `mise run ci-test` when their prerequisites are available. `mise run setup` changes Git hooks; follow the Git hook migration procedure before running it.
+`mise run fix` is a superset of `mise run check`, so read its output for the problems that no fix can change, and use `mise run check` for the read-only result.
 Inspect changes produced by fix tasks.
 If the repository has no Go packages or a required tool or service is unavailable, report the commands not run and why.
 Do not claim CI or Homebrew publishing has been verified without exercising it.
