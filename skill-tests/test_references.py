@@ -37,12 +37,14 @@ class SkillReferenceTest(unittest.TestCase):
 		config = (REFERENCES / "hk.pkl").read_text()
 		mise = (REFERENCES / "mise.toml").read_text()
 		pin = re.search(r'^hk = "([^"]+)"', mise, re.MULTILINE)
-		self.assertIsNotNone(pin, "hk must be pinned in mise.toml")
+		if pin is None:
+			self.fail("hk must be pinned in mise.toml")
 		hk = pin.group(1)
 		hk_versions = re.findall(r"jdx/hk/releases/download/v([^/]+)/hk@", config)
 		self.assertEqual(hk_versions, [hk], "hk.pkl must import the pinned hk version")
 		package = re.search(r"hk-config@([^#\"]+)#", config)
-		self.assertIsNotNone(package, "hk.pkl must import the hk-config package")
+		if package is None:
+			self.fail("hk.pkl must import the hk-config package")
 		self.assertEqual(package.group(1).split("-")[0], hk, "hk-config must target the pinned hk version")
 		self.assertIn('["change-id"] = Extra.timber_commit_msg', config)
 		self.assertNotIn("git-review", config)
@@ -74,6 +76,8 @@ class SkillReferenceTest(unittest.TestCase):
 @unittest.skipUnless(FIXTURE, "Run skill-tests/verify-tasks for hk integration tests")
 class HkEntryPointTest(unittest.TestCase):
 	def setUp(self) -> None:
+		if FIXTURE is None:
+			self.fail("Run skill-tests/verify-tasks for hk integration tests")
 		self.tmp = tempfile.TemporaryDirectory()
 		self.addCleanup(self.tmp.cleanup)
 		self.project = Path(self.tmp.name)
