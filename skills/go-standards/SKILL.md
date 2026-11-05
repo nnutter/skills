@@ -238,10 +238,10 @@ Pin the versions of golangci-lint and every separately run analyzer.
 - **[go-check-sumtype](https://github.com/alecthomas/go-check-sumtype)** — Exhaustive type switches over sealed interfaces.
   Run it through golangci-lint when supported.
   Otherwise, run it separately.
-- **[phase-shift](https://github.com/nnutter/go-phase-shift)** — Opt-in non-mutation checks for `//phase:nonmutating` functions and methods.
+- **[constable](https://github.com/nnutter/constable)** — Opt-in non-mutation checks for `//constable:nonmutating` functions and methods.
   Run it through golangci-lint when supported.
   Otherwise, run it separately.
-  See the go-phase-shift skill.
+  See the constable skill.
 - **[errorlint](https://github.com/polyfloyd/go-errorlint)** — `errors.Is` / `errors.As` / wrapping discipline instead of `err ==` and bad `%v` wraps.
 - **[modernize](https://pkg.go.dev/golang.org/x/tools/gopls/internal/analysis/modernize)** — Prefer current Go APIs and patterns (`min`/`max`, `clear`, `slices`, range-over-func, and similar).
   Also available via gopls suggestions.
