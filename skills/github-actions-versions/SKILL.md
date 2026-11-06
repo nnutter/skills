@@ -5,16 +5,11 @@ description: Look up the latest release of a GitHub Action before pinning or upd
 
 # GitHub Action Versions
 
-Never guess an Action's latest version from training data.
-Look it up live against the upstream repo before editing a workflow.
-
-## Lookup
+Never use an action's latest version from training data, always look it up using GitHub's API.
+Upgrade each GitHub Actions action to the latest version by looking up the latest tag on that is at least 7 days old,
 
 ```bash
-gh api repos/<owner>/<repo>/releases/latest --jq '{tag: .tag_name, published: .published_at}'
-gh api "repos/<owner>/<repo>/tags?per_page=10" --jq '.[].name'
+gh api "repos/<owner>/<repo>/releases?per_page=5" --jq '.[] | pick(.tag_name, .published_at)'
 ```
 
-- Pin to the floating major tag (e.g. `actions/checkout@v7`), not the full semver, unless the project says otherwise.
-- Confirm the floating tag (e.g. `v7`) exists in the tags output.
-- `git ls-remote https://github.com/...` may fail when git config rewrites `https://github.com/` to SSH (`url...insteadOf`); prefer `gh api` for the lookup.
+Pin the commit hash and use a comment, Python-style, two spaces then `# <tag>`.
