@@ -15,7 +15,7 @@ jactionlint = "latest"
 # Git 2.54 and later lets hk install config-based hooks, so hooks do not need
 # files in .git/hooks. A system Git below 2.54 falls back to script shims.
 "conda:git" = "latest"
-gitleaks = "latest"
+betterleaks = "latest"
 # Python only runs the tests and scripts here, so it takes the latest release;
 # a repository whose own code is Python may pin it.
 python = "latest"

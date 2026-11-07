@@ -41,7 +41,7 @@ When Python only runs repository scripts, `python` MUST use `latest`.
 `hk` MUST be pinned, because `hk.pkl` imports an exact hk release and the step types of 2 releases do not match.
 The `hk-config` package that `hk.pkl` amends MUST target the `hk` pin in `mise.toml`:
 
-- its version is `<hk-version>-<revision>`, such as `v2.11.1-2/hk-config@2.11.1-2`, and `<hk-version>` MUST equal the pin;
+- its version is `<hk-version>-<revision>`, such as `v2.11.1-6/hk-config@2.11.1-6`, and `<hk-version>` MUST equal the pin;
 - a config that also imports hk's own builtins MUST import `v<hk-version>/hk@<hk-version>`, such as `v2.11.1/hk@2.11.1`.
 
 The agent MUST take the highest revision that is released for the pinned hk version, because each revision adds builtins and hook templates for that release.
@@ -91,7 +91,7 @@ The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only 
 
 - Configure the recommended tool for each language and format in `references/tools.md`.
 - Configure the hooks from `Hooks.all` in the same reference, with the groups that the repository needs.
-- Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `gitleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
+- Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `betterleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
   Preserve its least-privilege permissions.
   Pin each action to a full commit SHA and keep its release tag in a comment.
@@ -106,7 +106,7 @@ A custom step MUST carry a comment that states why no built-in fits.
 If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.
 
 The agent MUST preserve tests, coverage, setup, and the `on-start` and `on-stop` hooks.
-The pre-commit hook MUST scan the staged content for secrets.
+The pre-commit hook MUST scan the staged files for secrets.
 For an existing repository, adapt commands to its structure without removing these capabilities.
 hk's `go_fix` and `gomod_tidy` steps run at the module workspace, so a fix of 1 Go file can rewrite other files in that module.
 The `pre-commit` hook therefore stashes unstaged changes.

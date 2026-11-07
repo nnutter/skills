@@ -75,11 +75,14 @@ CONDA_PREFIX = false
 
 | Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `gitleaks` | default | `gitleaks` | The `pre-commit` hook scans the staged content, and every other hook scans the worktree. |
+| `betterleaks` | default | `betterleaks` | The step scans the files the hook selects, so `pre-commit` scans the staged files and every other hook scans the worktree. |
 | `mise` | default | `mise` | Checks the format of the `mise` configuration. |
 | `newlines` | default | `hk util end-of-file-fixer` |  |
 | `trailing_whitespace` | default | `hk util trailing-whitespace` |  |
 | `typos` | none | `typos` | Custom step. Spelling. |
+
+`betterleaks` is the maintained successor to `gitleaks`, from the same authors.
+It loads `.gitleaks.toml` only with `--unsafe-auto-load-config`, and the builtin of hk does not set the flag, so a repository with that file sets the flag in its own step.
 
 ## Other languages and formats
 

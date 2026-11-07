@@ -188,12 +188,16 @@ class HkEntryPointTest(unittest.TestCase):
 		self.run_command("git", "add", path.name)
 		self.run_command("git", "commit", "-qm", "Safe plain text")
 		head = self.run_command("git", "rev-parse", "HEAD").stdout
-		fake_key = "AKIA" + "Q7M3XNB5TRW2KHLD"
-		path.write_text(f'aws = "{fake_key}"\n')
+		# betterleaks reports a token that looks random, so the fixture uses
+		# one. The parts keep the token out of this file, so the scan of this
+		# repository does not report it.
+		prefix = "ghp_"
+		fake = prefix + "O6f53Xbz8Vl" + "ZxnoGEPVy7lGoJBPm4ldEmFm6"
+		path.write_text(f'value = "{fake}"\n')
 		self.run_command("git", "add", path.name)
 		result = self.run_command("git", "commit", "-qm", "Reject credential", check=False)
 		self.assertNotEqual(result.returncode, 0, result.stdout)
-		self.assertIn("gitleaks", result.stdout.lower())
+		self.assertIn("betterleaks", result.stdout.lower())
 		self.assertEqual(self.run_command("git", "rev-parse", "HEAD").stdout, head)
 
 	def test_pre_commit_formats_and_stages_only_selected_files(self) -> None:
