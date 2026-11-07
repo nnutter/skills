@@ -94,6 +94,12 @@ Use these only when the repository already uses the language or format.
 | Dockerfile | `hadolint` |
 | JavaScript, TypeScript | `oxfmt` and `ox_lint` in `ts-backend` or `ts-frontend`, `tsc` in `ts-backend`, `oxfmt` in `json` |
 | Kotlin, Java | `ktlint`, `google_java_format` |
+| Protocol Buffers | `buf_format`, `buf_lint`, `api_linter_buf` in `proto` |
 | Ruby | `rubocop` |
 | Rust | `cargo_fmt`, `cargo_check`, and `cargo_clippy` in `rust`, `cargo_deny` |
 | Terraform, OpenTofu | `terraform_validate`, `tf_lint`, `tofu_validate` |
+
+The `proto` group holds `buf_format`, `buf_lint`, and `api_linter_buf`, so a repository with Protocol Buffers names the group and installs `buf` and `api-linter`.
+The `api_linter_buf` step runs at the root of a buf module and pipes a descriptor set from `buf build` into the linter, so it needs `buf` and `api-linter`.
+It runs only where a `buf.yaml` file exists at the workspace root.
+A repository whose proto imports are all on disk replaces the step of the group with `api_linter`, which runs the linter without buf.

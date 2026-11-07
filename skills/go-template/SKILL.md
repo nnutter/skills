@@ -79,7 +79,7 @@ Use `references/mise.toml` and `references/hk.pkl` as the configuration referenc
 - the check hook sets no order, so every step runs at once.
 
 The agent MUST pass the groups that the repository needs, and MUST NOT list the steps of a group itself.
-Use `go` for Go; `toml`, `yaml`, `json`, `shell`, `python`, `rust`, and `buf` for their languages and formats; `ts-backend` and `ts-frontend` for TypeScript; and `agentskills` for skill front matter.
+Use `go` for Go; `toml`, `yaml`, `json`, `shell`, `python`, `rust`, and `proto` for their languages and formats; `ts-backend` and `ts-frontend` for TypeScript; and `agentskills` for skill front matter.
 The agent MUST NOT write `depends` for a step that the template supplies.
 A step that the agent replaces or adds is its own step, so the agent MUST set that step's `depends` to keep its place in the order.
 
