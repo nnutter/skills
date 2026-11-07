@@ -62,6 +62,7 @@ The agent MUST install a tool from its published release with the `github:` back
 `github:nnutter/constable` is such a tool.
 A released binary is built with one Go toolchain and reads the build artifacts of that toolchain, so the agent MUST run the binary of a Go analyzer before it prefers the binary over the compile: gohawk v0.7.2 was built with Go 1.27.0, so it panics on a module that Go 1.27.3 compiles.
 The agent MUST keep the `go:` backend for a tool whose binary cannot read the code, and MUST record the reason in `mise.toml`.
+The errcheck, sumtype, testifylint, and nilaway analyzers run inside the `constable` binary, so the agent MUST NOT install a separate tool for them.
 When the repository contains skills, the agent MUST name the `agentskills` group, which supplies the `skills_ref` step, and MUST install its `agentskills` command from `pypi:agentskills-tools`.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
 `hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
@@ -91,7 +92,8 @@ The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only 
 
 - Configure the recommended tool for each language and format in `references/tools.md`.
 - Configure the hooks from `Hooks.all` in the same reference, with the groups that the repository needs.
-- Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `betterleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
+- Preserve the existing `constable`, `betterleaks`, Markdown linting, and Change-Id capabilities.
+  The `constable` step runs the errcheck, sumtype, testifylint, and nilaway analyzers, so it preserves those capabilities too.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
   Preserve its least-privilege permissions.
   Pin each action to a full commit SHA and keep its release tag in a comment.

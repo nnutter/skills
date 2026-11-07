@@ -20,19 +20,15 @@ yamlfmt = "latest"
 # Prefer a published release over a compile: the github: backend downloads the
 # macOS and Linux binaries for arm64 and amd64, and the go: backend builds the
 # tool on every machine and every CI run. A tool keeps go: when no release
-# covers both platforms (errcheck, nilaway, goimports, govulncheck), or when its
-# binary cannot read the code: gohawk v0.7.2 was built with Go 1.27.0 and panics
-# on a module that Go 1.27.3 compiles, and testifylint v0.0.1 was built with
-# Go 1.26.
-"github:alecthomas/go-check-sumtype" = "latest"
+# covers both platforms (goimports, govulncheck), or when its binary cannot
+# read the code: gohawk v0.7.2 was built with Go 1.27.0 and panics on a module
+# that Go 1.27.3 compiles. The errcheck, sumtype, testifylint, and nilaway
+# analyzers run inside constable, so they need no tool of their own.
 "github:nnutter/constable" = "latest"
 "github:nnutter/mdlint" = "latest"
 "github:nnutter/timber" = "latest"
 "github:securego/gosec" = "latest"
 "go:github.com/kojah/gohawk" = "latest"
-"go:github.com/kisielk/errcheck" = "latest"
-"go:github.com/nnutter/testifylint" = "latest"
-"go:go.uber.org/nilaway/cmd/nilaway" = "latest"
 "go:golang.org/x/tools/cmd/goimports" = "latest"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 

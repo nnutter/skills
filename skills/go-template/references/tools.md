@@ -10,8 +10,8 @@ Install a tool from its published release with the `github:` backend when that r
 `github:nnutter/constable` is such a tool, and a new tool SHOULD join it.
 
 A Go analyzer reads the build artifacts of the toolchain that compiles the module, so its binary must be built with a Go at least as new as the repository's.
-`gohawk` v0.7.2 was built with Go 1.27.0 and panics on a module that Go 1.27.3 compiles, and `testifylint` v0.0.1 was built with Go 1.26 and cannot analyze such a module.
-These tools therefore keep the `go:` backend: `gohawk`, `testifylint`, and `errcheck`, `nilaway`, `goimports`, and `govulncheck`, which publish no release for both platforms.
+`gohawk` v0.7.2 was built with Go 1.27.0 and panics on a module that Go 1.27.3 compiles.
+`gohawk` therefore keeps the `go:` backend, as do `goimports` and `govulncheck`, which publish no release for both platforms.
 
 `default` is a step that every hook runs, so no group adds it.
 Add the group of each language and format that the repository contains.
@@ -20,21 +20,22 @@ Add the group of each language and format that the repository contains.
 
 | Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
+| `go_generate` | go | `go generate` | Only fixes, so a check hook skips it. It runs first in the group, before the steps that format its output. |
 | `go_imports` | go | `goimports` | Groups this module's own packages as a separate import group. |
 | `go_fumpt` | go | `gofumpt` | Runs before the steps that need formatted code. |
 | `go_fix` | go | `go fix` | Needs Go 1.26 or later. |
-| `testifylint` | go | `testifylint` |  |
-| `constable` | go | `constable` | Contracts, method order, complexity, and predicates. |
+| `constable` | go | `constable` | Contracts, method order, complexity, and predicates. It also runs the errcheck, sumtype, testifylint, and nilaway analyzers. |
 | `gomod_tidy` | go | `go mod tidy` | Runs in the module workspace and stages `go.mod` and `go.sum`. |
 | `go_vet` | go | `go vet` |  |
 | `staticcheck` | go | `staticcheck` |  |
 | `go_vuln_check` | go | `govulncheck` |  |
-| `err_check` | go | `errcheck` |  |
-| `go_check_sumtype` | go | `go-check-sumtype` | Requires an exhaustive switch over a sum type. |
-| `nilaway` | go | `nilaway` | Checks this module's packages only. |
 | `go_sec` | go | `gosec` | High-severity findings only. |
 | `gohawk` | go | `gohawk` | Resource lifetime and concurrency bugs. |
 | `golangci_lint` | none | `golangci-lint` | Custom step. Use when 1 run must cover many analyzers. |
+
+The `constable` step runs the errcheck, sumtype, testifylint, and nilaway analyzers inside its own binary, so a repository needs no separate tool for them.
+The testifylint analyzer reports `useless-assert`, so a fix hook can exit 3 after `constable -fix` rewrites an assertion such as `assert.Equal(t, true, false)` to `assert.True(t, false)`.
+The developer must then change the assertion.
 
 ## Markdown, YAML, TOML, Pkl, and shell
 
