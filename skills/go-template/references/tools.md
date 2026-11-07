@@ -10,8 +10,8 @@ Install a tool from its published release with the `github:` backend when that r
 `github:nnutter/constable` is such a tool, and a new tool SHOULD join it.
 
 A Go analyzer reads the build artifacts of the toolchain that compiles the module, so its binary must be built with a Go at least as new as the repository's.
-`gohawk` v0.7.2 was built with Go 1.27.0 and panics on a module that Go 1.27.3 compiles, and `testifylint` v0.0.1 was built with Go 1.26 and cannot analyze such a module.
-These tools therefore keep the `go:` backend: `gohawk`, `testifylint`, and `errcheck`, `nilaway`, `goimports`, and `govulncheck`, which publish no release for both platforms.
+`gohawk` v0.7.2 was built with Go 1.27.0 and panics on a module that Go 1.27.3 compiles.
+`gohawk` therefore keeps the `go:` backend, as do `goimports` and `govulncheck`, which publish no release for both platforms.
 
 `default` is a step that every hook runs, so no group adds it.
 Add the group of each language and format that the repository contains.
@@ -20,21 +20,22 @@ Add the group of each language and format that the repository contains.
 
 | Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
+| `go_generate` | go | `go generate` | Only fixes, so a check hook skips it. It runs first in the group, before the steps that format its output. |
 | `go_imports` | go | `goimports` | Groups this module's own packages as a separate import group. |
 | `go_fumpt` | go | `gofumpt` | Runs before the steps that need formatted code. |
 | `go_fix` | go | `go fix` | Needs Go 1.26 or later. |
-| `testifylint` | go | `testifylint` |  |
-| `constable` | go | `constable` | Contracts, method order, complexity, and predicates. |
+| `constable` | go | `constable` | Contracts, method order, complexity, and predicates. It also runs the errcheck, sumtype, testifylint, and nilaway analyzers. |
 | `gomod_tidy` | go | `go mod tidy` | Runs in the module workspace and stages `go.mod` and `go.sum`. |
 | `go_vet` | go | `go vet` |  |
 | `staticcheck` | go | `staticcheck` |  |
 | `go_vuln_check` | go | `govulncheck` |  |
-| `err_check` | go | `errcheck` |  |
-| `go_check_sumtype` | go | `go-check-sumtype` | Requires an exhaustive switch over a sum type. |
-| `nilaway` | go | `nilaway` | Checks this module's packages only. |
 | `go_sec` | go | `gosec` | High-severity findings only. |
 | `gohawk` | go | `gohawk` | Resource lifetime and concurrency bugs. |
 | `golangci_lint` | none | `golangci-lint` | Custom step. Use when 1 run must cover many analyzers. |
+
+The `constable` step runs the errcheck, sumtype, testifylint, and nilaway analyzers inside its own binary, so a repository needs no separate tool for them.
+The testifylint analyzer reports `useless-assert`, so a fix hook can exit 3 after `constable -fix` rewrites an assertion such as `assert.Equal(t, true, false)` to `assert.True(t, false)`.
+The developer must then change the assertion.
 
 ## Markdown, YAML, TOML, Pkl, and shell
 
@@ -75,11 +76,14 @@ CONDA_PREFIX = false
 
 | Step | Group | Tool | Notes |
 | --- | --- | --- | --- |
-| `gitleaks` | default | `gitleaks` | The `pre-commit` hook scans the staged content, and every other hook scans the worktree. |
+| `betterleaks` | default | `betterleaks` | The step scans the files the hook selects, so `pre-commit` scans the staged files and every other hook scans the worktree. |
 | `mise` | default | `mise` | Checks the format of the `mise` configuration. |
 | `newlines` | default | `hk util end-of-file-fixer` |  |
 | `trailing_whitespace` | default | `hk util trailing-whitespace` |  |
 | `typos` | none | `typos` | Custom step. Spelling. |
+
+`betterleaks` is the maintained successor to `gitleaks`, from the same authors.
+It loads `.gitleaks.toml` only with `--unsafe-auto-load-config`, and the builtin of hk does not set the flag, so a repository with that file sets the flag in its own step.
 
 ## Other languages and formats
 
@@ -90,6 +94,12 @@ Use these only when the repository already uses the language or format.
 | Dockerfile | `hadolint` |
 | JavaScript, TypeScript | `oxfmt` and `ox_lint` in `ts-backend` or `ts-frontend`, `tsc` in `ts-backend`, `oxfmt` in `json` |
 | Kotlin, Java | `ktlint`, `google_java_format` |
+| Protocol Buffers | `buf_format`, `buf_lint`, `api_linter_buf` in `proto` |
 | Ruby | `rubocop` |
 | Rust | `cargo_fmt`, `cargo_check`, and `cargo_clippy` in `rust`, `cargo_deny` |
 | Terraform, OpenTofu | `terraform_validate`, `tf_lint`, `tofu_validate` |
+
+The `proto` group holds `buf_format`, `buf_lint`, and `api_linter_buf`, so a repository with Protocol Buffers names the group and installs `buf` and `api-linter`.
+The `api_linter_buf` step runs at the root of a buf module and pipes a descriptor set from `buf build` into the linter, so it needs `buf` and `api-linter`.
+It runs only where a `buf.yaml` file exists at the workspace root.
+A repository whose proto imports are all on disk replaces the step of the group with `api_linter`, which runs the linter without buf.

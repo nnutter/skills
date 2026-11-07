@@ -41,7 +41,7 @@ When Python only runs repository scripts, `python` MUST use `latest`.
 `hk` MUST be pinned, because `hk.pkl` imports an exact hk release and the step types of 2 releases do not match.
 The `hk-config` package that `hk.pkl` amends MUST target the `hk` pin in `mise.toml`:
 
-- its version is `<hk-version>-<revision>`, such as `v2.11.1-2/hk-config@2.11.1-2`, and `<hk-version>` MUST equal the pin;
+- its version is `<hk-version>-<revision>`, such as `v2.11.1-6/hk-config@2.11.1-6`, and `<hk-version>` MUST equal the pin;
 - a config that also imports hk's own builtins MUST import `v<hk-version>/hk@<hk-version>`, such as `v2.11.1/hk@2.11.1`.
 
 The agent MUST take the highest revision that is released for the pinned hk version, because each revision adds builtins and hook templates for that release.
@@ -62,6 +62,7 @@ The agent MUST install a tool from its published release with the `github:` back
 `github:nnutter/constable` is such a tool.
 A released binary is built with one Go toolchain and reads the build artifacts of that toolchain, so the agent MUST run the binary of a Go analyzer before it prefers the binary over the compile: gohawk v0.7.2 was built with Go 1.27.0, so it panics on a module that Go 1.27.3 compiles.
 The agent MUST keep the `go:` backend for a tool whose binary cannot read the code, and MUST record the reason in `mise.toml`.
+The errcheck, sumtype, testifylint, and nilaway analyzers run inside the `constable` binary, so the agent MUST NOT install a separate tool for them.
 When the repository contains skills, the agent MUST name the `agentskills` group, which supplies the `skills_ref` step, and MUST install its `agentskills` command from `pypi:agentskills-tools`.
 The agent MUST use suitable `hk` built-ins when available and MUST use custom `hk` steps for the remaining required tools.
 `hk` supersedes `lefthook` as the hook manager, and the baseline MUST NOT add `lefthook`.
@@ -78,7 +79,7 @@ Use `references/mise.toml` and `references/hk.pkl` as the configuration referenc
 - the check hook sets no order, so every step runs at once.
 
 The agent MUST pass the groups that the repository needs, and MUST NOT list the steps of a group itself.
-Use `go` for Go; `toml`, `yaml`, `json`, `shell`, `python`, `rust`, and `buf` for their languages and formats; `ts-backend` and `ts-frontend` for TypeScript; and `agentskills` for skill front matter.
+Use `go` for Go; `toml`, `yaml`, `json`, `shell`, `python`, `rust`, and `proto` for their languages and formats; `ts-backend` and `ts-frontend` for TypeScript; and `agentskills` for skill front matter.
 The agent MUST NOT write `depends` for a step that the template supplies.
 A step that the agent replaces or adds is its own step, so the agent MUST set that step's `depends` to keep its place in the order.
 
@@ -91,7 +92,8 @@ The `fix` and `check` tasks MUST delegate to `hk`, so that `hk.pkl` is the only 
 
 - Configure the recommended tool for each language and format in `references/tools.md`.
 - Configure the hooks from `Hooks.all` in the same reference, with the groups that the repository needs.
-- Preserve the existing `testifylint`, `go-check-sumtype`, `errcheck`, `constable`, `gitleaks`, `nilaway`, Markdown linting, and Change-Id capabilities.
+- Preserve the existing `constable`, `betterleaks`, Markdown linting, and Change-Id capabilities.
+  The `constable` step runs the errcheck, sumtype, testifylint, and nilaway analyzers, so it preserves those capabilities too.
 - Configure GitHub CI from `references/.github/workflows/ci.yaml` and run the same checks in CI as in the local workflow.
   Preserve its least-privilege permissions.
   Pin each action to a full commit SHA and keep its release tag in a comment.
@@ -106,7 +108,7 @@ A custom step MUST carry a comment that states why no built-in fits.
 If a built-in needs a different command in more than 1 repository, the agent SHOULD add the built-in to `hk-config` instead of copying the override.
 
 The agent MUST preserve tests, coverage, setup, and the `on-start` and `on-stop` hooks.
-The pre-commit hook MUST scan the staged content for secrets.
+The pre-commit hook MUST scan the staged files for secrets.
 For an existing repository, adapt commands to its structure without removing these capabilities.
 hk's `go_fix` and `gomod_tidy` steps run at the module workspace, so a fix of 1 Go file can rewrite other files in that module.
 The `pre-commit` hook therefore stashes unstaged changes.
